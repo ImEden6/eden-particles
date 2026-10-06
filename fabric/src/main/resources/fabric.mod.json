@@ -12,6 +12,9 @@
     "entrypoints": {
         "main": [
             "com.eden.particles.EdenParticlesFabric"
+        ],
+        "client": [
+            "com.eden.particles.EdenParticlesFabricClient"
         ]
     },
     "mixins": [

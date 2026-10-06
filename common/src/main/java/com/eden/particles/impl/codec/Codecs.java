@@ -186,6 +186,11 @@ public final class Codecs {
         return codec.encodeStart(ops, value).getOrThrow();
     }
 
+    /** {@code " (did you mean 'x'?)"}, or empty when nothing is close. */
+    public static String didYouMean(String value, Collection<String> options) {
+        return Suggestions.didYouMean(value, options);
+    }
+
     public static String unknownChoice(String what, String value, Collection<String> options) {
         return "unknown " + what + " '" + value + "'" + Suggestions.didYouMean(value, options) + "; expected one of " + options;
     }

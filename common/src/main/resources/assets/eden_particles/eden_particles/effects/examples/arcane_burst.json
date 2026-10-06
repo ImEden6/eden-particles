@@ -1,0 +1,48 @@
+{
+  "duration": 60,
+  "emitters": [
+    {
+      "name": "charge",
+      "start": 0,
+      "duration": 30,
+      "template": "eden_particles:examples/arcane_mote",
+      "shape": {
+        "type": "ring",
+        "radius": { "keys": [[0, 2.0], [1, 0.3]], "ease": "in_cubic" }
+      },
+      "axis": "y",
+      "spin": 18,
+      "spawn": { "rate": [[0, 2], [1, 12]] },
+      "velocity": { "type": "toward_center", "speed": 0.06 },
+      "offset": [0, 0.1, 0]
+    },
+    {
+      "name": "flash",
+      "start": 30,
+      "duration": 1,
+      "template": {
+        "render": { "type": "sprite", "sprite": "eden_particles:spark", "blend": "additive", "emissive": true },
+        "lifetime": [8, 14],
+        "size": [[0, 0.35], [1, 0.0]],
+        "color": "#FFFFFF",
+        "physics": { "drag": 0.85 }
+      },
+      "shape": { "type": "sphere", "radius": 0.2, "surface": true },
+      "distribution": "even",
+      "spawn": { "bursts": [{ "at": 0, "count": 48 }] },
+      "velocity": { "type": "radial", "speed": { "distance": [1.5, 2.5] } },
+      "offset": [0, 1.0, 0],
+      "important": true
+    },
+    {
+      "name": "embers",
+      "start": 32,
+      "duration": 28,
+      "template": "eden_particles:examples/arcane_mote",
+      "shape": { "type": "disc", "radius": 1.2 },
+      "spawn": { "rate": [[0, 6], [1, 0]], "jitter": true },
+      "velocity": { "type": "fixed", "direction": [0, 1, 0], "speed": [0.02, 0.06] },
+      "offset": [0, 0.8, 0]
+    }
+  ]
+}
