@@ -98,6 +98,7 @@ public final class EffectManager {
     }
 
     void clear() {
+        active.forEach(EffectInstance::stop);
         active.clear();
         warnedFull = false;
     }

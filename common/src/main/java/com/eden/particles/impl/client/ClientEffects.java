@@ -1,5 +1,7 @@
 package com.eden.particles.impl.client;
 
+import com.eden.particles.impl.ClientHooks;
+import com.eden.particles.impl.Sides;
 import com.eden.particles.impl.load.DefinitionStore;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.particles.SimpleParticleType;
@@ -13,7 +15,13 @@ public final class ClientEffects {
 
     public static final EffectManager MANAGER = new EffectManager(STORE);
 
+    public static final ClientHooks HOOKS = new ClientHooksImpl(MANAGER);
+
     private ClientEffects() {
+    }
+
+    public static void init() {
+        Sides.installClient(HOOKS);
     }
 
     public static void tick() {
