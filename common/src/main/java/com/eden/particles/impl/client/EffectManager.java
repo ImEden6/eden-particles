@@ -33,6 +33,7 @@ public final class EffectManager {
     private ClientLevel level;
     private int attemptsLastTick;
     private boolean warnedFull;
+    Bench bench;
 
     EffectManager(DefinitionStore store) {
         store.onReload(report -> rebake(store));
@@ -68,11 +69,14 @@ public final class EffectManager {
         }
         if (level == null || minecraft.isPaused()) return;
         Demo.tick(minecraft, this);
-        if (active.isEmpty()) {
-            attemptsLastTick = 0;
-            return;
+        long start = System.nanoTime();
+        attemptsLastTick = active.isEmpty() ? 0 : tickActive(minecraft);
+        if (bench != null && !bench.record(System.nanoTime() - start, attemptsLastTick)) {
+            bench = null;
         }
+    }
 
+    private int tickActive(Minecraft minecraft) {
         ParticleStatus status = minecraft.options.particles().get();
         float quality = switch (status) {
             case ALL -> 1f;
@@ -94,13 +98,14 @@ public final class EffectManager {
             attempts += instance.tick(sink, quality * fade * budget, importantQuality * fade * budget);
             if (instance.isFinished()) it.remove();
         }
-        attemptsLastTick = attempts;
+        return attempts;
     }
 
     void clear() {
         active.forEach(EffectInstance::stop);
         active.clear();
         warnedFull = false;
+        bench = null;
     }
 
     /** Density fades from full at 3/8 of the effect's range to none at 3/4 of it. */

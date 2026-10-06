@@ -1,0 +1,8 @@
+{
+  "render": { "type": "sprite", "sprite": "eden_particles:glow", "blend": "additive", "emissive": true },
+  "lifetime": [25, 40],
+  "size": { "keys": [[0, 0.05], [0.3, 0.18], [1, 0.0]], "mode": "monotone" },
+  "alpha": [[0, 0.0], [0.15, 0.6], [1, 0.0]],
+  "color": [{ "t": 0, "color": "#9CFFB0" }, { "t": 1, "color": "#1F9E5A" }],
+  "physics": { "drag": 0.96 }
+}

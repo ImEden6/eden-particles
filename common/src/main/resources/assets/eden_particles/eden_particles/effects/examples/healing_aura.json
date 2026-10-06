@@ -1,0 +1,24 @@
+{
+  "duration": 40,
+  "loop": true,
+  "emitters": [
+    {
+      "name": "ring",
+      "duration": 40,
+      "template": "eden_particles:examples/heal_mote",
+      "shape": { "type": "ring", "radius": 0.8 },
+      "spin": 6,
+      "spawn": { "rate": 3 },
+      "velocity": { "type": "fixed", "direction": [0, 1, 0], "speed": [0.02, 0.04] },
+      "offset": [0, 0.1, 0]
+    },
+    {
+      "name": "sparkle",
+      "duration": 40,
+      "template": "eden_particles:examples/heal_mote",
+      "shape": { "type": "hemisphere", "radius": 1.0, "surface": true },
+      "spawn": { "rate": 0.5, "jitter": true },
+      "offset": [0, 0.6, 0]
+    }
+  ]
+}

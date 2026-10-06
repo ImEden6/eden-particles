@@ -1,0 +1,7 @@
+{
+  "render": { "type": "sprite", "sprite": "eden_particles:spark", "blend": "additive", "emissive": true },
+  "lifetime": [10, 16],
+  "size": { "keys": [{ "t": 0, "v": 0.3 }, { "t": 0.6, "v": 0.3, "ease": "step" }, { "t": 1, "v": 0.0, "ease": "in_quad" }] },
+  "color": { "keys": [{ "t": 0, "color": "#FFF4C2" }, { "t": 1, "color": "#FF5A1F", "ease": "out_cubic" }], "space": "oklab" },
+  "physics": { "drag": 0.8 }
+}

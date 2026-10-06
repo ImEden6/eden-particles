@@ -1,0 +1,8 @@
+{
+  "render": { "type": "sprite", "sprite": "minecraft:bubble" },
+  "lifetime": [30, 45],
+  "size": 0.08,
+  "alpha": { "keys": [[0, 0.9], [1, 0.0]], "ease": { "cubic_bezier": [0.7, 0.0, 0.84, 0.0] } },
+  "color": { "keys": [{ "t": 0, "color": "#BFE8FF" }, { "t": 1, "color": "#3F76E4" }], "space": "srgb" },
+  "physics": { "gravity": 1.0, "drag": 0.98, "collide": true }
+}

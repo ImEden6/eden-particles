@@ -1,0 +1,19 @@
+{
+  "duration": 100,
+  "loop": true,
+  "range": 96,
+  "emitters": [
+    {
+      "duration": 100,
+      "template": {
+        "render": { "type": "vanilla", "particle": "minecraft:campfire_cosy_smoke" },
+        "lifetime": [80, 140],
+        "physics": { "gravity": -0.05, "drag": 0.97 }
+      },
+      "shape": { "type": "box", "size": [0.6, 0.1, 0.6] },
+      "spawn": { "rate": 0.4, "jitter": true },
+      "velocity": { "type": "cone", "half_angle": 10, "speed": { "mean": 0.07, "deviation": 0.015, "min": 0.03 } },
+      "offset": [0, 0.4, 0]
+    }
+  ]
+}

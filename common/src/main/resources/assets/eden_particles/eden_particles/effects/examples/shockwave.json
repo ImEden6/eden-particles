@@ -1,0 +1,32 @@
+{
+  "duration": 2,
+  "emitters": [
+    {
+      "name": "wave",
+      "duration": 1,
+      "template": "eden_particles:examples/shock_spark",
+      "shape": { "type": "disc", "radius": 0.6, "inner_radius": 0.5 },
+      "distribution": "even",
+      "spawn": { "bursts": [{ "count": 72 }] },
+      "velocity": { "type": "radial", "speed": { "distance": [3.5, 4.5] } },
+      "offset": [0, 0.15, 0],
+      "important": true
+    },
+    {
+      "name": "dust",
+      "start": 1,
+      "duration": 1,
+      "template": {
+        "render": { "type": "sprite", "sprite": "eden_particles:glow" },
+        "lifetime": [15, 25],
+        "size": [[0, 0.2], [1, 0.4]],
+        "alpha": [[0, 0.5], [1, 0]],
+        "color": "#9A8F84",
+        "physics": { "gravity": -0.02, "drag": 0.85 }
+      },
+      "shape": { "type": "box", "size": [2.5, 0, 2.5], "surface": false },
+      "spawn": { "bursts": [{ "count": [20, 30] }] },
+      "velocity": { "type": "fixed", "direction": [0, 1, 0], "speed": [0.02, 0.08] }
+    }
+  ]
+}

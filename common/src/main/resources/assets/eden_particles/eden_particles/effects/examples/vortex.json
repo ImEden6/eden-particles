@@ -1,0 +1,32 @@
+{
+  "duration": 80,
+  "emitters": [
+    {
+      "name": "swirl",
+      "duration": 80,
+      "template": "eden_particles:examples/vortex_wisp",
+      "shape": { "type": "hemisphere", "radius": 2.5 },
+      "spin": { "keys": [[0, 2], [0.5, 12], [1, 2]], "mode": "catmull_rom" },
+      "spawn": { "rate": { "keys": [[0, 2], [0.5, 10], [1, 0]], "mode": "monotone" } },
+      "velocity": { "type": "tangent", "speed": 0.12 }
+    },
+    {
+      "name": "drain",
+      "duration": 80,
+      "template": "eden_particles:examples/vortex_wisp",
+      "shape": { "type": "sphere", "radius": 3, "inner_radius": 2.5 },
+      "spawn": { "rate": 4 },
+      "velocity": { "type": "toward_center", "speed": { "distance": 2.5 } },
+      "offset": [0, 1, 0]
+    },
+    {
+      "name": "column",
+      "start": 20,
+      "duration": 40,
+      "template": "eden_particles:examples/shock_spark",
+      "shape": { "type": "line", "from": [0, 0, 0], "to": [0, 3, 0] },
+      "spawn": { "rate": 3 },
+      "important": true
+    }
+  ]
+}
