@@ -92,7 +92,7 @@ class LoadingTest {
                 List.of(raw("smoky", effectUsing("test:smoke")), raw("fiery", effectUsing("test:flame"))),
                 List.of()));
         assertEquals(Set.of(id("smoky")), store.effectIds());
-        assertEquals("at render.particle: unknown particle type 'minecraft:flaem'", report.errors().get(0).message());
+        assertEquals("at render.particle: 'minecraft:flaem' is not a known particle type without options", report.errors().get(0).message());
     }
 
     @Test

@@ -83,7 +83,7 @@ public final class Linker {
 
     private static String checkTemplate(ParticleTemplate template, Predicate<ResourceLocation> particleTypeExists) {
         if (template.render() instanceof RenderMode.Vanilla vanilla && !particleTypeExists.test(vanilla.particle())) {
-            return "at render.particle: unknown particle type '" + vanilla.particle() + "'";
+            return "at render.particle: '" + vanilla.particle() + "' is not a known particle type without options";
         }
         return null;
     }

@@ -12,7 +12,7 @@
       },
       "axis": "y",
       "spin": 18,
-      "spawn": { "rate": [[0, 2], [1, 12]] },
+      "spawn": { "rate": [[0, 2], [1, 8]] },
       "velocity": { "type": "toward_center", "speed": 0.06 },
       "offset": [0, 0.1, 0]
     },
