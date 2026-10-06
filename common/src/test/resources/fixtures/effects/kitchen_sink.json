@@ -1,0 +1,43 @@
+{
+  "duration": 100,
+  "loop": true,
+  "range": 96,
+  "emitters": [
+    {
+      "duration": 100,
+      "template": "eden_particles:campfire_smoke",
+      "shape": { "type": "box", "size": [2, 0.5, 2], "surface": false },
+      "spawn": { "rate": 0.3 },
+      "velocity": { "type": "cone", "half_angle": 15, "speed": { "mean": 0.05, "deviation": 0.01, "min": 0 } }
+    },
+    {
+      "duration": 50,
+      "template": "eden_particles:arcane_mote",
+      "shape": { "type": "hemisphere", "radius": 1, "surface": true },
+      "axis": [0, -1, 0],
+      "spawn": { "bursts": [{ "count": [3, 6] }, { "at": 25, "count": 10 }] },
+      "velocity": { "type": "tangent", "speed": 0.1 }
+    },
+    {
+      "start": 50,
+      "duration": 50,
+      "template": "eden_particles:arcane_mote",
+      "shape": { "type": "line", "from": [-1, 0, 0], "to": [1, 0, 0] },
+      "spin": { "keys": [[0, 0], [1, 36]], "mode": "monotone" },
+      "spawn": { "rate": { "keys": [{ "t": 0, "v": 0 }, { "t": 0.5, "v": 8, "ease": { "cubic_bezier": [0.25, 0.1, 0.25, 1.0] } }, { "t": 1, "v": 0, "ease": "step" }] } }
+    },
+    {
+      "start": 10,
+      "duration": 20,
+      "template": "eden_particles:arcane_mote",
+      "shape": { "type": "sphere", "radius": [[0, 0.5], [1, 3]], "inner_radius": 0.25 },
+      "spawn": { "rate": 5 },
+      "velocity": { "type": "none" }
+    },
+    {
+      "duration": 5,
+      "template": "eden_particles:arcane_mote",
+      "spawn": { "bursts": [{ "count": 1 }] }
+    }
+  ]
+}

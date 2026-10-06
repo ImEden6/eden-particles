@@ -86,6 +86,23 @@ public final class Gradient {
         return space;
     }
 
+    public int keyCount() {
+        return times.length;
+    }
+
+    public double keyTime(int index) {
+        return times[index];
+    }
+
+    public int keyColor(int index) {
+        return colors[index];
+    }
+
+    /** Easing of the segment ending at key {@code index}. */
+    public Easing easingInto(int index) {
+        return easings[index - 1];
+    }
+
     private double[] toSpace(int rgb) {
         double r = ColorMath.red(rgb);
         double g = ColorMath.green(rgb);

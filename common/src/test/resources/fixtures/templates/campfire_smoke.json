@@ -1,0 +1,5 @@
+{
+  "render": { "type": "vanilla", "particle": "minecraft:campfire_cosy_smoke" },
+  "lifetime": { "min": 40, "max": 80 },
+  "physics": { "gravity": -0.1, "drag": 0.96, "collide": true }
+}

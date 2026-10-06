@@ -62,6 +62,10 @@ public final class Easings {
         return Collections.unmodifiableSet(BY_NAME.keySet());
     }
 
+    public static Optional<String> nameOf(Easing easing) {
+        return BY_NAME.entrySet().stream().filter(e -> e.getValue() == easing).map(Map.Entry::getKey).findFirst();
+    }
+
     /** CSS {@code cubic-bezier()}; {@code x1} and {@code x2} must be in [0,1]. */
     public static Easing cubicBezier(double x1, double y1, double x2, double y2) {
         return new CubicBezierEasing(x1, y1, x2, y2);

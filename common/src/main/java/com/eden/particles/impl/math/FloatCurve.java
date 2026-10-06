@@ -97,6 +97,11 @@ public final class FloatCurve {
         return values[index];
     }
 
+    /** Easing of the segment ending at key {@code index}; EASED curves only. */
+    public Easing easingInto(int index) {
+        return easings[index - 1];
+    }
+
     public boolean isConstant() {
         for (double v : values) {
             if (v != values[0]) return false;

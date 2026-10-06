@@ -1,12 +1,13 @@
 package com.eden.particles.impl.math;
 
 /** Solves {@code X(s) = x}, then returns {@code Y(s)}. Newton first, bisection fallback, as in WebKit's UnitBezier. */
-final class CubicBezierEasing implements Easing {
+public final class CubicBezierEasing implements Easing {
 
     private static final double EPSILON = 1e-9;
     private static final int NEWTON_ITERATIONS = 8;
     private static final int MAX_BISECTIONS = 64;
 
+    private final double x1, y1, x2, y2;
     private final double ax, bx, cx;
     private final double ay, by, cy;
 
@@ -17,12 +18,21 @@ final class CubicBezierEasing implements Easing {
         if (!Double.isFinite(y1) || !Double.isFinite(y2)) {
             throw new IllegalArgumentException("cubic_bezier y values must be finite");
         }
+        this.x1 = x1;
+        this.y1 = y1;
+        this.x2 = x2;
+        this.y2 = y2;
         cx = 3.0 * x1;
         bx = 3.0 * (x2 - x1) - cx;
         ax = 1.0 - cx - bx;
         cy = 3.0 * y1;
         by = 3.0 * (y2 - y1) - cy;
         ay = 1.0 - cy - by;
+    }
+
+    /** {@code [x1, y1, x2, y2]} */
+    public double[] controlPoints() {
+        return new double[]{x1, y1, x2, y2};
     }
 
     @Override
