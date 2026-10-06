@@ -57,6 +57,11 @@ repositories {
     }
 }
 
+// Missing-comment warnings are noise for internals; the public api package gets its own check once it exists.
+tasks.withType(Javadoc).configureEach {
+    options.addBooleanOption('Xdoclint:all,-missing', true)
+}
+
 sourcesJar {
     from(rootProject.file('LICENSE')) {
         rename { "${it}_${mod_name}" }
