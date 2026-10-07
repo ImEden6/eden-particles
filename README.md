@@ -32,4 +32,6 @@ Run tasks: `:fabric:runClient` / `:fabric:runServer`, `:neoforge:runClient` / `:
 
 Dev servers need `eula.txt` accepted in their run directory, except NeoForge, which skips the check in development.
 
+Demo mode: add `-Pdemo=<effect id>` to a client run (for example `./gradlew :fabric:runClient -Pdemo=eden_particles:examples/vortex`) to replay that effect in front of you whenever nothing else is playing.
+
 Testing with Sodium or Iris (Fabric only): `./gradlew :fabric:runClient -PwithSodium` or `-PwithIris` (which includes Sodium).

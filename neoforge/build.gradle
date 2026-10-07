@@ -21,6 +21,8 @@ neoForge {
         }
         client {
             client()
+            // Dev demo: ./gradlew :neoforge:runClient -Pdemo=<effect id>
+            if (project.hasProperty('demo')) systemProperty('eden_particles.demo', project.property('demo').toString())
         }
         data {
             data()

@@ -1,5 +1,6 @@
 package com.eden.particles.impl.client;
 
+import com.eden.particles.Constants;
 import com.eden.particles.impl.runtime.Anchor;
 import com.eden.particles.impl.runtime.PlayParams;
 import com.eden.particles.platform.Services;
@@ -8,7 +9,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.phys.Vec3;
 
 /**
- * Dev-only: with {@code -Deden_particles.demo=<effect id>} (or {@code EDEN_PARTICLES_DEMO}), replays that effect
+ * Dev-only: launched with {@code -Pdemo=<effect id>} (passed as {@code -Deden_particles.demo}), replays that effect
  * in front of the player whenever nothing is playing.
  */
 final class Demo {
@@ -17,6 +18,10 @@ final class Demo {
     private static int cooldown;
 
     private Demo() {
+    }
+
+    /** Reads the flag at startup, so its log line appears before any world loads. */
+    static void init() {
     }
 
     static void tick(Minecraft minecraft, EffectManager manager) {
@@ -30,7 +35,10 @@ final class Demo {
 
     private static ResourceLocation parse() {
         if (!Services.PLATFORM.isDevelopmentEnvironment()) return null;
-        String value = System.getProperty("eden_particles.demo", System.getenv("EDEN_PARTICLES_DEMO"));
-        return value == null || value.isBlank() ? null : ResourceLocation.tryParse(value.trim());
+        String value = System.getProperty("eden_particles.demo");
+        if (value == null || value.isBlank()) return null;
+        ResourceLocation id = ResourceLocation.tryParse(value.trim());
+        Constants.LOG.info("Demo mode: replaying {}", id != null ? id : "nothing ('" + value + "' is not a valid id)");
+        return id;
     }
 }

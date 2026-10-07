@@ -46,6 +46,8 @@ loom {
     runs {
         client {
             client()
+            // Dev demo: ./gradlew :fabric:runClient -Pdemo=<effect id>
+            if (project.hasProperty('demo')) vmArg("-Deden_particles.demo=${project.property('demo')}")
             setConfigName('Fabric Client')
             ideConfigGenerated(true)
             runDir('runs/client')
