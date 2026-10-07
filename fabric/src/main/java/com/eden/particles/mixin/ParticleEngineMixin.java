@@ -26,7 +26,7 @@ public abstract class ParticleEngineMixin {
     @Inject(method = "<clinit>", at = @At("TAIL"))
     private static void eden_particles$addRenderTypes(CallbackInfo ci) {
         List<ParticleRenderType> order = new ArrayList<>(RENDER_ORDER);
-        order.add(EdenRenderTypes.ADDITIVE);
+        order.addAll(EdenRenderTypes.CUSTOM);
         RENDER_ORDER = List.copyOf(order);
     }
 }

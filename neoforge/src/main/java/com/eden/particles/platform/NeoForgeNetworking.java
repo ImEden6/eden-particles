@@ -17,4 +17,9 @@ public class NeoForgeNetworking implements INetworking {
     public void send(ServerPlayer player, CustomPacketPayload payload) {
         PacketDistributor.sendToPlayer(player, payload);
     }
+
+    @Override
+    public void sendToServer(CustomPacketPayload payload) {
+        PacketDistributor.sendToServer(payload);
+    }
 }

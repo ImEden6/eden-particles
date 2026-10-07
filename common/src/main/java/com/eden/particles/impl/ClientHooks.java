@@ -3,6 +3,7 @@ package com.eden.particles.impl;
 import com.eden.particles.api.EffectAnchor;
 import com.eden.particles.api.EffectHandle;
 import com.eden.particles.api.EffectParams;
+import com.eden.particles.impl.net.ImagePayloads;
 import com.eden.particles.impl.net.PlayEffectPayload;
 import com.eden.particles.impl.net.StopEffectPayload;
 import com.eden.particles.impl.net.SyncDefinitionsPayload;
@@ -22,4 +23,8 @@ public interface ClientHooks {
     void handle(StopEffectPayload payload);
 
     void handle(SyncDefinitionsPayload payload);
+
+    void handle(ImagePayloads.Offer payload);
+
+    void handle(ImagePayloads.Images payload);
 }

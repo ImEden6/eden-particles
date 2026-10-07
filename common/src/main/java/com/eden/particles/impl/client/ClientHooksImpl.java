@@ -11,6 +11,7 @@ import com.eden.particles.impl.load.DefinitionError;
 import com.eden.particles.impl.load.DefinitionStore;
 import com.eden.particles.impl.load.ParsedDefinitions;
 import com.eden.particles.impl.load.RawDefinition;
+import com.eden.particles.impl.net.ImagePayloads;
 import com.eden.particles.impl.net.StopEffectPayload;
 import com.eden.particles.impl.net.SyncDefinitionsPayload;
 import com.google.gson.JsonParseException;
@@ -102,6 +103,16 @@ final class ClientHooksImpl implements ClientHooks {
         if (received.equals(applied)) return;
         applied = received;
         ClientEffects.report(ClientEffects.STORE.replace(DefinitionStore.Layer.DATAPACK, parse(received)));
+    }
+
+    @Override
+    public void handle(ImagePayloads.Offer payload) {
+        manager.images().handle(payload);
+    }
+
+    @Override
+    public void handle(ImagePayloads.Images payload) {
+        manager.images().handle(payload);
     }
 
     /** Drops the server's datapack definitions after disconnecting. */

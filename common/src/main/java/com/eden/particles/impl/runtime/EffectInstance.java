@@ -178,6 +178,7 @@ public final class EffectInstance {
         sampleShape(track.shape(), emitter.radius().sample(u), even, index, count, phase);
         int lifetime = template.lifetime().sample(random);
         float speed = sampleVelocity(track.velocity(), lifetime, template.physics().drag());
+        float variant = random.nextFloat();
 
         float scale = params.scale();
         frame.set(params.rotation()).mul(emitter.axisRotation()).rotateY((float) Math.toRadians(state.spinDegrees));
@@ -189,7 +190,7 @@ public final class EffectInstance {
         double x = previous.x + (current.x - previous.x) * tau + offset.x + position.x + direction.x * advance;
         double y = previous.y + (current.y - previous.y) * tau + offset.y + position.y + direction.y * advance;
         double z = previous.z + (current.z - previous.z) * tau + offset.z + position.z + direction.z * advance;
-        sink.spawn(template, x, y, z, direction.x, direction.y, direction.z, lifetime, scale, params.tint());
+        sink.spawn(template, x, y, z, direction.x, direction.y, direction.z, lifetime, scale, params.tint(), variant);
     }
 
     private void sampleShape(EmitterShape shape, float radius, boolean even, int index, int count, float phase) {

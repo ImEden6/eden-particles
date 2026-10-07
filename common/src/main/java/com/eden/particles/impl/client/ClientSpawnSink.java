@@ -2,6 +2,7 @@ package com.eden.particles.impl.client;
 
 import com.eden.particles.Constants;
 import com.eden.particles.impl.definition.RenderMode;
+import com.eden.particles.impl.definition.SpriteRef;
 import com.eden.particles.impl.runtime.BakedTemplate;
 import com.eden.particles.impl.runtime.SpawnSink;
 import com.eden.particles.mixin.ParticleAccessor;
@@ -20,7 +21,9 @@ import net.minecraft.resources.ResourceLocation;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.IdentityHashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Queue;
 import java.util.Set;
 
@@ -29,22 +32,33 @@ final class ClientSpawnSink implements SpawnSink {
     /** Vanilla evicts the oldest particle past 16,384 per render type; stay below, leaving room for others' particles. */
     static final int LIVE_LIMIT = 15_000;
 
-    private final Map<ResourceLocation, TextureAtlasSprite> sprites = new HashMap<>();
+    private static final List<ParticleRenderType> CAPPED = List.of(ParticleRenderType.PARTICLE_SHEET_TRANSLUCENT,
+            EdenRenderTypes.ADDITIVE, EdenRenderTypes.SYNCED_TRANSLUCENT, EdenRenderTypes.SYNCED_ADDITIVE);
+
+    private final ClientImages images;
+    private final Map<SpriteRef, Optional<ResolvedSprite>> resolved = new HashMap<>();
     private final Set<ResourceLocation> warnedMissing = new HashSet<>();
+    private final Set<SpriteRef> warnedMixed = new HashSet<>();
     /** Added via {@code ParticleEngine.add} this tick; they only reach the live queues on vanilla's next tick. */
     private final Map<ParticleRenderType, Integer> pending = new IdentityHashMap<>();
     private int dropped;
 
+    ClientSpawnSink(ClientImages images) {
+        this.images = images;
+    }
+
     @Override
     public void spawn(BakedTemplate template, double x, double y, double z, double vx, double vy, double vz,
-                      int lifetime, float scale, int tint) {
+                      int lifetime, float scale, int tint, float variant) {
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.level == null) return;
         switch (template.render()) {
             case RenderMode.Sprite sprite -> {
-                if (!admit(sprite.blend() == RenderMode.Blend.ADDITIVE ? EdenRenderTypes.ADDITIVE : ParticleRenderType.PARTICLE_SHEET_TRANSLUCENT)) return;
+                // Empty while a server image is declined or hasn't arrived: skip rather than draw a placeholder.
+                Optional<ResolvedSprite> frames = resolve(sprite.sprite());
+                if (frames.isEmpty() || !admit(EdenRenderTypes.of(frames.get().synced(), sprite.blend()))) return;
                 minecraft.particleEngine.add(new EdenParticle(minecraft.level, x, y, z, vx, vy, vz,
-                        template, sprite, lifetime, scale, tint, sprite(sprite.sprite())));
+                        template, sprite, frames.get(), lifetime, scale, tint, variant));
             }
             case RenderMode.Vanilla vanilla -> {
                 // The linker only admits simple particle types.
@@ -66,9 +80,13 @@ final class ClientSpawnSink implements SpawnSink {
         pending.clear();
     }
 
-    /** Smallest remaining room across the render types Eden sprites use. */
+    /** Smallest remaining room across the render types Eden spawns into. */
     int headroom() {
-        return Math.min(LIVE_LIMIT - live(EdenRenderTypes.ADDITIVE), LIVE_LIMIT - live(ParticleRenderType.PARTICLE_SHEET_TRANSLUCENT));
+        int room = Integer.MAX_VALUE;
+        for (ParticleRenderType type : CAPPED) {
+            room = Math.min(room, LIVE_LIMIT - live(type));
+        }
+        return room;
     }
 
     int drainDropped() {
@@ -78,8 +96,69 @@ final class ClientSpawnSink implements SpawnSink {
     }
 
     void clearCaches() {
-        sprites.clear();
+        resolved.clear();
         warnedMissing.clear();
+        warnedMixed.clear();
+    }
+
+    private Optional<ResolvedSprite> resolve(SpriteRef ref) {
+        Optional<ResolvedSprite> cached = resolved.get(ref);
+        if (cached != null) return cached;
+        Optional<ResolvedSprite> result = build(ref);
+        resolved.put(ref, result);
+        return result;
+    }
+
+    private Optional<ResolvedSprite> build(SpriteRef ref) {
+        for (ResourceLocation id : ref.images()) {
+            if (images.isWithheld(id)) return Optional.empty();
+        }
+        boolean synced = images.atlas().has(ref.images().get(0));
+        return Optional.of(switch (ref.source()) {
+            case SpriteRef.Source.Frames frames -> {
+                float[] uvs = new float[frames.ids().size() * 4];
+                TextureAtlasSprite first = null;
+                for (int i = 0; i < frames.ids().size(); i++) {
+                    ResourceLocation id = frames.ids().get(i);
+                    if (images.atlas().has(id) != synced && warnedMixed.add(ref)) {
+                        Constants.LOG.warn("Sprite frames {} mix server images and resource-pack sprites; frames from "
+                                + "the other source show as missing", frames.ids());
+                    }
+                    TextureAtlasSprite sprite = synced ? images.atlas().sprite(id) : vanillaSprite(id);
+                    if (first == null) first = sprite;
+                    uvs[i * 4] = sprite.getU0();
+                    uvs[i * 4 + 1] = sprite.getU1();
+                    uvs[i * 4 + 2] = sprite.getV0();
+                    uvs[i * 4 + 3] = sprite.getV1();
+                }
+                yield new ResolvedSprite(synced, first, uvs);
+            }
+            case SpriteRef.Source.Sheet sheet -> {
+                TextureAtlasSprite sprite = synced ? images.atlas().sprite(sheet.id()) : vanillaSprite(sheet.id());
+                float du = (sprite.getU1() - sprite.getU0()) / sheet.columns();
+                float dv = (sprite.getV1() - sprite.getV0()) / sheet.rows();
+                float[] uvs = new float[sheet.count() * 4];
+                for (int i = 0; i < sheet.count(); i++) {
+                    int column = i % sheet.columns();
+                    int row = i / sheet.columns();
+                    uvs[i * 4] = sprite.getU0() + du * column;
+                    uvs[i * 4 + 1] = sprite.getU0() + du * (column + 1);
+                    uvs[i * 4 + 2] = sprite.getV0() + dv * row;
+                    uvs[i * 4 + 3] = sprite.getV0() + dv * (row + 1);
+                }
+                yield new ResolvedSprite(synced, sprite, uvs);
+            }
+        });
+    }
+
+    private TextureAtlasSprite vanillaSprite(ResourceLocation id) {
+        TextureAtlas atlas = (TextureAtlas) Minecraft.getInstance().getTextureManager().getTexture(TextureAtlas.LOCATION_PARTICLES);
+        TextureAtlasSprite sprite = atlas.getSprite(id);
+        if (sprite.contents().name().equals(MissingTextureAtlasSprite.getLocation()) && warnedMissing.add(id)) {
+            Constants.LOG.warn("Missing particle sprite '{}'; expected assets/{}/textures/particle/{}.png or a server datapack image",
+                    id, id.getNamespace(), id.getPath());
+        }
+        return sprite;
     }
 
     private boolean admit(ParticleRenderType type) {
@@ -99,17 +178,5 @@ final class ClientSpawnSink implements SpawnSink {
     private static ParticleEngineAccessor engine() {
         ParticleEngine engine = Minecraft.getInstance().particleEngine;
         return (ParticleEngineAccessor) engine;
-    }
-
-    private TextureAtlasSprite sprite(ResourceLocation id) {
-        return sprites.computeIfAbsent(id, key -> {
-            TextureAtlas atlas = (TextureAtlas) Minecraft.getInstance().getTextureManager().getTexture(TextureAtlas.LOCATION_PARTICLES);
-            TextureAtlasSprite sprite = atlas.getSprite(key);
-            if (sprite.contents().name().equals(MissingTextureAtlasSprite.getLocation()) && warnedMissing.add(key)) {
-                Constants.LOG.warn("Missing particle sprite '{}'; expected assets/{}/textures/particle/{}.png",
-                        key, key.getNamespace(), key.getPath());
-            }
-            return sprite;
-        });
     }
 }

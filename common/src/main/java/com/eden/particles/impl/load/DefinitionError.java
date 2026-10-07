@@ -5,7 +5,7 @@ import net.minecraft.resources.ResourceLocation;
 /** @param source the pack the file came from, or empty if unknown */
 public record DefinitionError(Kind kind, ResourceLocation id, String source, String message) {
 
-    public enum Kind { EFFECT, TEMPLATE }
+    public enum Kind { EFFECT, TEMPLATE, IMAGE }
 
     @Override
     public String toString() {

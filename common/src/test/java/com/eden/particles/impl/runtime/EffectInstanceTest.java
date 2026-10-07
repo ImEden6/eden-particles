@@ -43,7 +43,7 @@ class EffectInstanceTest {
         List<List<Spawn>> perTick = new ArrayList<>();
         for (int t = 0; t < ticks && instance.prepare(); t++) {
             List<Spawn> spawns = new ArrayList<>();
-            instance.tick((tpl, x, y, z, vx, vy, vz, life, scale, tint) -> spawns.add(new Spawn(x, y, z, vx, vy, vz, life)), keep, keep);
+            instance.tick((tpl, x, y, z, vx, vy, vz, life, scale, tint, variant) -> spawns.add(new Spawn(x, y, z, vx, vy, vz, life)), keep, keep);
             perTick.add(spawns);
         }
         return perTick;
@@ -61,7 +61,7 @@ class EffectInstanceTest {
         EffectInstance instance = new EffectInstance(fx, ORIGIN, PlayParams.of(1));
         int total = 0;
         while (instance.prepare()) {
-            total += instance.tick((tpl, x, y, z, vx, vy, vz, life, scale, tint) -> { }, 1f, 1f);
+            total += instance.tick((tpl, x, y, z, vx, vy, vz, life, scale, tint, variant) -> { }, 1f, 1f);
         }
         assertEquals(100, total); // 20 ticks × average rate 5
         assertTrue(instance.isFinished());
@@ -162,11 +162,11 @@ class EffectInstanceTest {
         BakedEffect fx = effect("5", "{\"duration\": 5, \"template\": $T, \"spawn\": {\"rate\": 4}}");
         EffectInstance instance = new EffectInstance(fx, out -> { out.set(anchorPos); return true; }, PlayParams.of(1));
         instance.prepare();
-        instance.tick((tpl, x, y, z, vx, vy, vz, life, scale, tint) -> { }, 1f, 1f);
+        instance.tick((tpl, x, y, z, vx, vy, vz, life, scale, tint, variant) -> { }, 1f, 1f);
         anchorPos.set(10, 0, 0);
         List<Double> xs = new ArrayList<>();
         instance.prepare();
-        instance.tick((tpl, x, y, z, vx, vy, vz, life, scale, tint) -> xs.add(x), 1f, 1f);
+        instance.tick((tpl, x, y, z, vx, vy, vz, life, scale, tint, variant) -> xs.add(x), 1f, 1f);
         assertEquals(List.of(1.25, 3.75, 6.25, 8.75), xs);
     }
 
@@ -188,13 +188,13 @@ class EffectInstanceTest {
         EffectInstance joiner = new EffectInstance(fx, ORIGIN, PlayParams.of(1));
         joiner.fastForward(23); // third loop, tick 3: the burst fires on the joiner's first tick, in step with everyone
         assertTrue(joiner.prepare());
-        assertEquals(4, joiner.tick((tpl, x, y, z, vx, vy, vz, life, scale, tint) -> { }, 1f, 1f));
+        assertEquals(4, joiner.tick((tpl, x, y, z, vx, vy, vz, life, scale, tint, variant) -> { }, 1f, 1f));
         for (int tick = 24; tick < 33; tick++) {
             joiner.prepare();
-            assertEquals(0, joiner.tick((tpl, x, y, z, vx, vy, vz, life, scale, tint) -> { }, 1f, 1f), "tick " + tick);
+            assertEquals(0, joiner.tick((tpl, x, y, z, vx, vy, vz, life, scale, tint, variant) -> { }, 1f, 1f), "tick " + tick);
         }
         joiner.prepare();
-        assertEquals(4, joiner.tick((tpl, x, y, z, vx, vy, vz, life, scale, tint) -> { }, 1f, 1f)); // tick 33: next loop's burst
+        assertEquals(4, joiner.tick((tpl, x, y, z, vx, vy, vz, life, scale, tint, variant) -> { }, 1f, 1f)); // tick 33: next loop's burst
     }
 
     @Test
@@ -208,7 +208,7 @@ class EffectInstanceTest {
         midway.fastForward(6);
         int ticks = 0;
         while (midway.prepare()) {
-            midway.tick((tpl, x, y, z, vx, vy, vz, life, scale, tint) -> { }, 1f, 1f);
+            midway.tick((tpl, x, y, z, vx, vy, vz, life, scale, tint, variant) -> { }, 1f, 1f);
             ticks++;
         }
         assertEquals(4, ticks);

@@ -9,4 +9,7 @@ public interface INetworking {
     boolean canSend(ServerPlayer player, CustomPacketPayload.Type<?> type);
 
     void send(ServerPlayer player, CustomPacketPayload payload);
+
+    /** Client only. */
+    void sendToServer(CustomPacketPayload payload);
 }

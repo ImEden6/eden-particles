@@ -1,11 +1,13 @@
 package com.eden.particles.impl;
 
 import com.eden.particles.Constants;
+import com.eden.particles.impl.images.ServerImages;
 import com.eden.particles.impl.load.DefinitionError;
 import com.eden.particles.impl.load.DefinitionFiles;
 import com.eden.particles.impl.load.LoadReport;
 import com.eden.particles.impl.load.ParsedDefinitions;
 import com.eden.particles.impl.load.RawDefinition;
+import com.eden.particles.impl.net.ImagePayloads;
 import com.eden.particles.impl.net.SyncDefinitionsPayload;
 import com.eden.particles.platform.Services;
 import net.minecraft.resources.ResourceLocation;
@@ -16,7 +18,9 @@ import net.minecraft.util.profiling.ProfilerFiller;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.WeakHashMap;
 
 /**
  * Server side of datapack definitions ({@code data/<ns>/eden_particles/...}). The server only checks that files parse;
@@ -30,14 +34,19 @@ public class DatapackDefinitions extends SimplePreparableReloadListener<Datapack
     static final int BATCH_BYTES = 512 * 1024;
 
     private static volatile List<SyncDefinitionsPayload.Entry> synced = List.of();
+    private static int revision;
+    /** Revision each player last received; new player objects on every login, so weak keys clear themselves. */
+    private static final Map<ServerPlayer, Integer> sent = new WeakHashMap<>();
 
-    record Prepared(DefinitionFiles.Read read, ParsedDefinitions parsed) {
+    record Prepared(DefinitionFiles.Read read, ParsedDefinitions parsed, List<ImagePayloads.Image> images, List<DefinitionError> imageErrors) {
     }
 
     @Override
     protected Prepared prepare(ResourceManager resources, ProfilerFiller profiler) {
         DefinitionFiles.Read read = DefinitionFiles.read(resources);
-        return new Prepared(read, read.parse());
+        List<DefinitionError> imageErrors = new ArrayList<>();
+        List<ImagePayloads.Image> images = ServerImages.read(resources, imageErrors);
+        return new Prepared(read, read.parse(), images, imageErrors);
     }
 
     @Override
@@ -46,21 +55,34 @@ public class DatapackDefinitions extends SimplePreparableReloadListener<Datapack
         List<SyncDefinitionsPayload.Entry> entries = new ArrayList<>();
         collect(prepared.read().templates(), parsed.templates().keySet(), DefinitionError.Kind.TEMPLATE, entries);
         collect(prepared.read().effects(), parsed.effects().keySet(), DefinitionError.Kind.EFFECT, entries);
-        synced = List.copyOf(entries);
-
-        LoadReport report = new LoadReport(parsed.effects().size(), parsed.templates().size(), parsed.errors());
-        if (!entries.isEmpty() || !report.errors().isEmpty()) {
-            Constants.LOG.info("Datapack definitions: {}", report.summary());
+        if (!entries.equals(synced)) {
+            synced = List.copyOf(entries);
+            revision++;
         }
-        report.errors().forEach(error -> Constants.LOG.error("{}", error));
+        ServerImages.replace(prepared.images());
+
+        List<DefinitionError> errors = new ArrayList<>(parsed.errors());
+        errors.addAll(prepared.imageErrors());
+        LoadReport report = new LoadReport(parsed.effects().size(), parsed.templates().size(), errors);
+        if (!entries.isEmpty() || !prepared.images().isEmpty() || !errors.isEmpty()) {
+            Constants.LOG.info("Datapack definitions: {}, {} image(s)", report.summary(), prepared.images().size());
+        }
+        errors.forEach(error -> Constants.LOG.error("{}", error));
     }
 
-    /** Sends the current datapack definitions; an empty sync still clears what the client had. */
+    /**
+     * Sends the current datapack definitions, then offers images; an empty sync still clears what the client had.
+     * Safe to call repeatedly: a player is only sent what changed since their last sync.
+     */
     public static void syncTo(ServerPlayer player) {
         if (!Services.NETWORK.canSend(player, SyncDefinitionsPayload.TYPE)) return;
-        for (SyncDefinitionsPayload payload : batches(synced, BATCH_BYTES)) {
-            Services.NETWORK.send(player, payload);
+        Integer last = sent.put(player, revision);
+        if (last == null || last != revision) {
+            for (SyncDefinitionsPayload payload : batches(synced, BATCH_BYTES)) {
+                Services.NETWORK.send(player, payload);
+            }
         }
+        ServerImages.syncTo(player);
     }
 
     /** Always at least one batch, so the client's layer is replaced even when there's nothing to send. */

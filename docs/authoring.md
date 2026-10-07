@@ -8,7 +8,15 @@ assets/<namespace>/eden_particles/templates/<path>.json  → template <namespace
 assets/<namespace>/textures/particle/<name>.png          → sprite   <namespace>:<name>
 ```
 
-Effects and templates can also come from a **datapack**, under `data/<namespace>/eden_particles/{effects,templates}/`. The server sends them to every player with the mod when they join and after `/reload`. A datapack definition overrides a resource-pack one with the same id, and can use resource-pack templates. Sprites still have to come from a resource pack, because textures can't be sent through a datapack (see [Custom images on a server](#custom-images-on-a-server)). Leaving the server removes its datapack definitions.
+Effects, templates and images can also come from a **datapack**:
+
+```
+data/<namespace>/eden_particles/effects/<path>.json      → effect   <namespace>:<path>
+data/<namespace>/eden_particles/templates/<path>.json    → template <namespace>:<path>
+data/<namespace>/eden_particles/textures/<path>.png      → sprite   <namespace>:<path>
+```
+
+The server sends definitions to every player with the mod when they join and after `/reload`. A datapack definition overrides a resource-pack one with the same id, and can use resource-pack templates and sprites. Images need the player's consent first: see [Images in a datapack](#images-in-a-datapack). Leaving the server removes everything it sent.
 
 Sprites go in the vanilla particle atlas, so any PNG under `textures/particle/` works with no extra configuration. Vanilla sprites work too (`"minecraft:bubble"`, `"minecraft:flame"`).
 
@@ -16,9 +24,26 @@ All times are in **ticks** (20 per second). Distances are in blocks. Speeds are 
 
 Reload with `F3+T`. `/eden_particles_client errors` lists any problems, and `/eden_particles_client play <effect>` plays one in front of you. The mod ships working examples under `eden_particles:examples/…`.
 
-## Custom images on a server
+## Images in a datapack
 
-Datapacks can define effects but can't carry images. To give a datapack effect its own sprites without a mod, ship the images in a **server resource pack**, which players download automatically when they join.
+Put PNGs in `data/<namespace>/eden_particles/textures/` and use them like any sprite: `data/mypack/eden_particles/textures/ember.png` is `"sprite": "mypack:ember"`. If a datapack image and a resource-pack sprite share an id, the datapack image wins.
+
+**Players are asked first.** When they join, they see "Particle images from this server" with **Allow**, **Always allow** (remembered for that server in `config/eden_particles-client.json`), or **Don't allow**. Until they allow, particles that use a server image simply don't spawn; the rest of each effect still plays. Your own singleplayer worlds never ask.
+
+**Limits** (larger images are rejected with an error naming the file):
+
+| | |
+|---|---|
+| Size | up to 256 × 256 pixels |
+| File | up to 256 KiB, PNG only |
+| Count | up to 512 images |
+| Total | up to 8 MiB |
+
+Images are sent again after `/reload` only if they changed, without asking again.
+
+### Alternative: a server resource pack
+
+If you'd rather players download images through vanilla's own mechanism, ship them in a **server resource pack** instead. Players are prompted by Minecraft itself.
 
 1. **Make a resource pack** with your PNGs:
    ```
@@ -147,10 +172,24 @@ Curves on a template run over the particle's own life, from `t = 0` (spawn) to `
 | `physics.collide` | `false` | Bounces off blocks. Costs more, so leave it off unless you need it. |
 
 **Render types:**
-- `{"type": "sprite", "sprite": …, "blend": "translucent" | "additive", "emissive": bool}` is Eden's own particle and follows every curve. `additive` adds light: overlapping particles brighten, which suits glows, sparks and magic. `emissive` makes the particle full-bright at night.
+- `{"type": "sprite", "sprite": …, "blend": "translucent" | "additive", "emissive": bool}` is Eden's own particle and follows every curve. See [Sprites](#sprites) for animated forms. `additive` adds light: overlapping particles brighten, which suits glows, sparks and magic. `emissive` makes the particle full-bright at night.
 - `{"type": "vanilla", "particle": "minecraft:campfire_cosy_smoke"}` spawns a vanilla particle type that takes no options. Emitter settings, lifetime and physics apply. Curves don't, and they're rejected if present.
 
 > **Additive colour tip:** additive blending adds colours up and clips at white. Pale colours (like `#D8C4FF`) turn white wherever two particles overlap. Use saturated colours with `alpha` around 0.4–0.6, so dense areas build up to a bright core instead.
+
+### Sprites
+
+```jsonc
+"sprite": "mypack:ember"                                                       // one image
+"sprite": { "frames": ["mypack:f0", "mypack:f1", "mypack:f2"] }                 // frames spread over the particle's life
+"sprite": { "frames": [ … ], "mode": "loop", "ticks_per_frame": 2 }             // cycle at a fixed speed
+"sprite": { "frames": [ … ], "mode": "random" }                                 // each particle shows one frame for its whole life
+"sprite": { "sheet": "mypack:smoke", "columns": 4, "rows": 2, "count": 7 }      // one image sliced into frames
+```
+
+- `mode` is `over_life` by default. `ticks_per_frame` only applies to `loop`.
+- A **sheet** is read left to right, top to bottom. `count` defaults to `columns × rows`; use it when the last row isn't full. Up to 64 frames in a list, 256 in a sheet.
+- Frames can be resource-pack sprites (including vanilla ones such as `minecraft:generic_0` … `minecraft:generic_7`) or datapack images, but not a mix of both in one sprite.
 
 ## Curves
 

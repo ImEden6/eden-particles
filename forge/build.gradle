@@ -36,6 +36,8 @@ minecraft {
             taskName 'Client'
             // Dev demo: ./gradlew :forge:Client -Pdemo=<effect id>
             if (project.hasProperty('demo')) property 'eden_particles.demo', project.property('demo').toString()
+            // Dev: -Pjoin=localhost connects straight to a server
+            if (project.hasProperty('join')) args '--quickPlayMultiplayer', project.property('join').toString()
             mods {
                 modClientRun {
                     source sourceSets.main

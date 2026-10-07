@@ -4,6 +4,8 @@ import com.eden.particles.impl.DatapackDefinitions;
 import com.eden.particles.impl.ServerCommands;
 import com.eden.particles.impl.ServerEffects;
 import com.eden.particles.impl.Sides;
+import com.eden.particles.impl.images.ServerImages;
+import com.eden.particles.impl.net.ImagePayloads;
 import com.eden.particles.impl.net.PlayEffectPayload;
 import com.eden.particles.impl.net.StopEffectPayload;
 import com.eden.particles.impl.net.SyncDefinitionsPayload;
@@ -18,6 +20,7 @@ import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 import net.neoforged.neoforge.network.registration.PayloadRegistrar;
+import net.minecraft.server.level.ServerPlayer;
 
 @Mod(Constants.MOD_ID)
 public class EdenParticlesNeoForge {
@@ -32,6 +35,12 @@ public class EdenParticlesNeoForge {
                     (payload, context) -> Sides.client().ifPresent(client -> client.handle(payload)));
             registrar.playToClient(SyncDefinitionsPayload.TYPE, SyncDefinitionsPayload.STREAM_CODEC,
                     (payload, context) -> Sides.client().ifPresent(client -> client.handle(payload)));
+            registrar.playToClient(ImagePayloads.Offer.TYPE, ImagePayloads.Offer.STREAM_CODEC,
+                    (payload, context) -> Sides.client().ifPresent(client -> client.handle(payload)));
+            registrar.playToClient(ImagePayloads.Images.TYPE, ImagePayloads.Images.STREAM_CODEC,
+                    (payload, context) -> Sides.client().ifPresent(client -> client.handle(payload)));
+            registrar.playToServer(ImagePayloads.Consent.TYPE, ImagePayloads.Consent.STREAM_CODEC,
+                    (payload, context) -> ServerImages.onConsent((ServerPlayer) context.player(), payload));
         });
         NeoForge.EVENT_BUS.addListener(RegisterCommandsEvent.class, event -> ServerCommands.register(event.getDispatcher()));
         NeoForge.EVENT_BUS.addListener(ServerTickEvent.Post.class, event -> ServerEffects.tick(event.getServer()));

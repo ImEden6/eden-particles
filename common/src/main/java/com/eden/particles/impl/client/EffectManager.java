@@ -28,7 +28,8 @@ public final class EffectManager {
     private static final float IMPORTANT_ON_MINIMAL = 1f / 15f;
 
     private final List<EffectInstance> active = new ArrayList<>();
-    private final ClientSpawnSink sink = new ClientSpawnSink();
+    private final ClientImages images = new ClientImages(this::onImagesChanged);
+    private final ClientSpawnSink sink = new ClientSpawnSink(images);
     private Map<ResourceLocation, BakedEffect> baked = Map.of();
     private ClientLevel level;
     private int attemptsLastTick;
@@ -52,6 +53,14 @@ public final class EffectManager {
         EffectInstance instance = new EffectInstance(effect, anchor, params);
         active.add(instance);
         return Optional.of(instance);
+    }
+
+    ClientImages images() {
+        return images;
+    }
+
+    private void onImagesChanged() {
+        sink.clearCaches();
     }
 
     public boolean isLoaded(ResourceLocation id) {

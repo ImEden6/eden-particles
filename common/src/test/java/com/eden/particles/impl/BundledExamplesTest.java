@@ -47,14 +47,14 @@ class BundledExamplesTest {
         LoadReport report = store.replace(DefinitionStore.Layer.ASSETS, ParsedDefinitions.parse(read("templates"), read("effects"), List.of()));
 
         assertTrue(report.errors().isEmpty(), report.errors().toString());
-        assertEquals(6, report.effects(), store.effectIds().toString());
+        assertEquals(7, report.effects(), store.effectIds().toString());
 
         for (ResourceLocation id : store.effectIds()) {
             BakedEffect effect = BakedEffect.bake(store.effect(id).orElseThrow());
             EffectInstance instance = new EffectInstance(effect, Anchor.fixed(0, 64, 0), PlayParams.of(id.hashCode()));
             int spawned = 0;
             for (int tick = 0; tick < 200 && instance.prepare(); tick++) {
-                spawned += instance.tick((t, x, y, z, vx, vy, vz, life, scale, tint) -> {
+                spawned += instance.tick((t, x, y, z, vx, vy, vz, life, scale, tint, variant) -> {
                     assertTrue(Double.isFinite(x) && Double.isFinite(y) && Double.isFinite(z), id + " spawned at a non-finite position");
                     assertTrue(Double.isFinite(vx) && Double.isFinite(vy) && Double.isFinite(vz), id + " has a non-finite velocity");
                     assertTrue(life >= 1, id + " lifetime " + life);

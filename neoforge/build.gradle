@@ -23,6 +23,8 @@ neoForge {
             client()
             // Dev demo: ./gradlew :neoforge:runClient -Pdemo=<effect id>
             if (project.hasProperty('demo')) systemProperty('eden_particles.demo', project.property('demo').toString())
+            // Dev: -Pjoin=localhost connects straight to a server
+            if (project.hasProperty('join')) programArguments.addAll('--quickPlayMultiplayer', project.property('join').toString())
         }
         data {
             data()

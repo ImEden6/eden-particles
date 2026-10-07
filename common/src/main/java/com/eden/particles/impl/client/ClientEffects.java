@@ -36,6 +36,7 @@ public final class ClientEffects {
     public static void tick() {
         Minecraft minecraft = Minecraft.getInstance();
         HOOKS_IMPL.tick(minecraft);
+        MANAGER.images().tick(minecraft);
         MANAGER.tick(minecraft);
     }
 

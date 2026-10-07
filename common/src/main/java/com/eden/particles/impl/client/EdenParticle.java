@@ -1,6 +1,7 @@
 package com.eden.particles.impl.client;
 
 import com.eden.particles.impl.definition.RenderMode;
+import com.eden.particles.impl.definition.SpriteRef;
 import com.eden.particles.impl.runtime.BakedTemplate;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.client.Camera;
@@ -8,22 +9,29 @@ import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.particle.ParticleRenderType;
 import net.minecraft.client.particle.TextureSheetParticle;
 import net.minecraft.client.renderer.LightTexture;
-import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 
-/** Follows its template's size, alpha, colour and speed curves over its life. */
+/** Follows its template's size, alpha, colour, speed and sprite-frame curves over its life. */
 public final class EdenParticle extends TextureSheetParticle {
 
     private final BakedTemplate template;
+    private final SpriteRef spriteRef;
+    private final ResolvedSprite resolved;
+    private final float variant;
     private final float scale;
     private final float tintR, tintG, tintB;
     private final boolean emissive;
     private final ParticleRenderType renderType;
+    private int frame;
 
     EdenParticle(ClientLevel level, double x, double y, double z, double vx, double vy, double vz,
-                 BakedTemplate template, RenderMode.Sprite render, int lifetime, float scale, int tint, TextureAtlasSprite sprite) {
+                 BakedTemplate template, RenderMode.Sprite render, ResolvedSprite resolved,
+                 int lifetime, float scale, int tint, float variant) {
         // The 4-argument constructor; the 7-argument one randomizes the velocity.
         super(level, x, y, z);
         this.template = template;
+        this.spriteRef = render.sprite();
+        this.resolved = resolved;
+        this.variant = variant;
         this.scale = scale;
         this.xd = vx;
         this.yd = vy;
@@ -36,8 +44,9 @@ public final class EdenParticle extends TextureSheetParticle {
         this.tintG = ((tint >> 8) & 0xFF) / 255f;
         this.tintB = (tint & 0xFF) / 255f;
         this.emissive = render.emissive();
-        this.renderType = render.blend() == RenderMode.Blend.ADDITIVE ? EdenRenderTypes.ADDITIVE : ParticleRenderType.PARTICLE_SHEET_TRANSLUCENT;
-        setSprite(sprite);
+        this.renderType = EdenRenderTypes.of(resolved.synced(), render.blend());
+        setSprite(resolved.first());
+        this.frame = spriteRef.frameAt(0, lifetime, variant);
     }
 
     /** Vanilla's tick, except displacement is scaled by the speed curve rather than stored into velocity. */
@@ -50,6 +59,7 @@ public final class EdenParticle extends TextureSheetParticle {
             remove();
             return;
         }
+        frame = spriteRef.frameAt(age, lifetime, variant);
         yd -= 0.04 * gravity;
         float s = template.speed().sample(age / (float) lifetime);
         move(xd * s, yd * s, zd * s);
@@ -71,6 +81,26 @@ public final class EdenParticle extends TextureSheetParticle {
         bCol = (rgb & 0xFF) / 255f * tintB;
         alpha = Math.max(0f, Math.min(1f, template.alpha().sample(t)));
         super.render(buffer, camera, partialTicks);
+    }
+
+    @Override
+    protected float getU0() {
+        return resolved.uvs()[frame * 4];
+    }
+
+    @Override
+    protected float getU1() {
+        return resolved.uvs()[frame * 4 + 1];
+    }
+
+    @Override
+    protected float getV0() {
+        return resolved.uvs()[frame * 4 + 2];
+    }
+
+    @Override
+    protected float getV1() {
+        return resolved.uvs()[frame * 4 + 3];
     }
 
     @Override

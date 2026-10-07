@@ -48,6 +48,8 @@ loom {
             client()
             // Dev demo: ./gradlew :fabric:runClient -Pdemo=<effect id>
             if (project.hasProperty('demo')) vmArg("-Deden_particles.demo=${project.property('demo')}")
+            // Dev: ./gradlew :fabric:runClient -Pjoin=localhost connects straight to a server
+            if (project.hasProperty('join')) programArgs('--quickPlayMultiplayer', project.property('join').toString())
             setConfigName('Fabric Client')
             ideConfigGenerated(true)
             runDir('runs/client')

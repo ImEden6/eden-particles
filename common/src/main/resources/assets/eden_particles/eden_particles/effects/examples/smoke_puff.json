@@ -1,0 +1,13 @@
+{
+  "duration": 1,
+  "emitters": [
+    {
+      "duration": 1,
+      "template": "eden_particles:examples/smoke_puff",
+      "shape": { "type": "sphere", "radius": 0.4 },
+      "spawn": { "bursts": [{ "count": [16, 24] }] },
+      "velocity": { "type": "radial", "speed": { "distance": 1.2 } },
+      "offset": [0, 0.5, 0]
+    }
+  ]
+}
