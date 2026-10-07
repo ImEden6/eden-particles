@@ -24,6 +24,7 @@ final class Bench {
     private long totalNanos;
     private long maxNanos;
     private long attempts;
+    private long dropped;
     private int peakParticles;
 
     private Bench(Consumer<Component> report) {
@@ -46,16 +47,17 @@ final class Bench {
     }
 
     /** @return false once finished */
-    boolean record(long nanos, int spawnAttempts) {
+    boolean record(long nanos, int spawnAttempts, int droppedAtCap) {
         ticks++;
         totalNanos += nanos;
         maxNanos = Math.max(maxNanos, nanos);
         attempts += spawnAttempts;
+        dropped += droppedAtCap;
         peakParticles = Math.max(peakParticles, Integer.parseInt(Minecraft.getInstance().particleEngine.countParticles()));
         if (ticks < TICKS) return true;
         report.accept(Component.literal(String.format(Locale.ROOT,
-                "Bench over %d ticks: %.3f ms/tick average, %.3f ms worst; %.0f spawns/tick; peak %d live particles",
-                ticks, totalNanos / 1e6 / ticks, maxNanos / 1e6, attempts / (double) ticks, peakParticles)));
+                "Bench over %d ticks: %.3f ms/tick average, %.3f ms worst; %.0f spawns/tick; peak %d live particles; %d dropped at the live cap",
+                ticks, totalNanos / 1e6 / ticks, maxNanos / 1e6, attempts / (double) ticks, peakParticles, dropped)));
         return false;
     }
 }

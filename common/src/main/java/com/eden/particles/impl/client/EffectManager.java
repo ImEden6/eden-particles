@@ -70,8 +70,10 @@ public final class EffectManager {
         if (level == null || minecraft.isPaused()) return;
         Demo.tick(minecraft, this);
         long start = System.nanoTime();
+        sink.beginTick();
         attemptsLastTick = active.isEmpty() ? 0 : tickActive(minecraft);
-        if (bench != null && !bench.record(System.nanoTime() - start, attemptsLastTick)) {
+        int dropped = sink.drainDropped();
+        if (bench != null && !bench.record(System.nanoTime() - start, attemptsLastTick, dropped)) {
             bench = null;
         }
     }
@@ -84,7 +86,9 @@ public final class EffectManager {
             case MINIMAL -> 0f;
         };
         float importantQuality = status == ParticleStatus.MINIMAL ? IMPORTANT_ON_MINIMAL : quality;
-        float budget = Math.min(1f, SPAWN_BUDGET_PER_TICK / (float) Math.max(1, attemptsLastTick));
+        // Spawn budget, tightened as the live queues near vanilla's eviction limit so effects thin out evenly.
+        int allowed = Math.min(SPAWN_BUDGET_PER_TICK, Math.max(0, sink.headroom()));
+        float budget = Math.min(1f, allowed / (float) Math.max(1, attemptsLastTick));
         Vec3 camera = minecraft.gameRenderer.getMainCamera().getPosition();
 
         int attempts = 0;

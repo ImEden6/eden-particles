@@ -167,6 +167,7 @@ Values rolled once per particle (speeds, lifetimes, burst counts):
 - The vanilla *Particles* setting scales spawns: *All* keeps everything, *Decreased* keeps 2/3, *Minimal* keeps none (except `important` emitters, which keep 1/15). Lower settings show a subset of the same particles, so the effect thins out rather than changing shape.
 - Every client that sees a server-started effect gets the same random pattern.
 - Total spawning is capped per tick. Past the cap, every effect thins out proportionally.
+- Vanilla holds at most 16,384 live particles per drawing style, and past that it deletes the oldest. Eden keeps below that limit by spawning fewer new particles as space runs out, so particles already on screen never vanish early.
 - `/eden_particles_client bench <effect> [count]` plays an effect on a grid and reports Eden's own tick cost.
 
 ## Errors
