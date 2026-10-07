@@ -18,8 +18,9 @@ import java.util.Collection;
 import java.util.List;
 
 /**
- * {@code /eden_particles play <effect> [pos] [targets]} and {@code /eden_particles stop [targets]}. Effect ids aren't
- * suggested: they live in client resource packs, which the server can't see.
+ * {@code /eden_particles play <effect> [pos] [targets | persistent]} and {@code /eden_particles stop [targets]}; a plain
+ * {@code stop} also forgets the level's persistent effects. Effect ids aren't suggested: they live in client resource
+ * packs, which the server can't see.
  */
 public final class ServerCommands {
 
@@ -34,10 +35,15 @@ public final class ServerCommands {
                                 .executes(c -> play(c, c.getSource().getPosition(), null))
                                 .then(Commands.argument("pos", Vec3Argument.vec3())
                                         .executes(c -> play(c, Vec3Argument.getVec3(c, "pos"), null))
+                                        .then(Commands.literal("persistent")
+                                                .executes(c -> playPersistent(c, Vec3Argument.getVec3(c, "pos"))))
                                         .then(Commands.argument("targets", EntityArgument.players())
                                                 .executes(c -> play(c, Vec3Argument.getVec3(c, "pos"), EntityArgument.getPlayers(c, "targets")))))))
                 .then(Commands.literal("stop")
-                        .executes(c -> stop(c, c.getSource().getLevel().players()))
+                        .executes(c -> {
+                            ServerEffects.forgetPersistent(c.getSource().getLevel());
+                            return stop(c, c.getSource().getLevel().players());
+                        })
                         .then(Commands.argument("targets", EntityArgument.players())
                                 .executes(c -> stop(c, EntityArgument.getPlayers(c, "targets"))))));
     }
@@ -58,6 +64,17 @@ public final class ServerCommands {
         int count = result.recipients();
         source.sendSuccess(() -> Component.literal("Playing " + effect + " for " + count + (count == 1 ? " player" : " players")), true);
         return count;
+    }
+
+    private static int playPersistent(CommandContext<CommandSourceStack> context, Vec3 pos) {
+        CommandSourceStack source = context.getSource();
+        ResourceLocation effect = ResourceLocationArgument.getId(context, "effect");
+        ServerEffects.Result result = ServerEffects.play(source.getLevel(), effect, EffectAnchor.at(pos),
+                EffectParams.builder().persistent().build());
+        int count = result.recipients();
+        source.sendSuccess(() -> Component.literal("Playing " + effect + " persistently, for " + count + " player(s) in range now"
+                + " and anyone who arrives later; /eden_particles stop ends it"), true);
+        return 1;
     }
 
     private static int stop(CommandContext<CommandSourceStack> context, Collection<ServerPlayer> targets) {

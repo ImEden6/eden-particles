@@ -62,7 +62,11 @@ final class ClientHooksImpl implements ClientHooks {
                 ? Minecraft.getInstance().level.getEntity(p.entityId()) : null;
         Anchor anchor = entity != null ? follow(entity, p.offset()) : fixed(p.position());
         start(p.effect(), anchor, toPlayParams(p.scale(), p.yaw(), p.pitch(), p.roll(), p.tint(), p.seed()))
-                .ifPresent(instance -> fromServer.put(p.instanceId(), instance));
+                .ifPresent(instance -> {
+                    instance.fastForward(p.elapsed());
+                    EffectInstance previous = fromServer.put(p.instanceId(), instance);
+                    if (previous != null) previous.stop();
+                });
     }
 
     @Override

@@ -26,14 +26,14 @@ class PayloadTest {
     @Test
     void playRoundTrips() {
         PlayEffectPayload payload = new PlayEffectPayload(7, ResourceLocation.fromNamespaceAndPath("eden_particles", "examples/arcane_burst"),
-                new Vec3(1.5, 64, -3.25), 42, new Vec3(0, 1, 0), 2f, 90f, -10f, 5f, 0xFF8800, -123456789L);
+                new Vec3(1.5, 64, -3.25), 42, new Vec3(0, 1, 0), 2f, 90f, -10f, 5f, 0xFF8800, -123456789L, 345);
         assertEquals(payload, roundTrip(PlayEffectPayload.STREAM_CODEC, payload));
     }
 
     @Test
     void fixedPositionUsesNoEntity() {
         PlayEffectPayload payload = new PlayEffectPayload(0, ResourceLocation.withDefaultNamespace("x"),
-                Vec3.ZERO, -1, Vec3.ZERO, 1f, 0f, 0f, 0f, 0xFFFFFF, 0L);
+                Vec3.ZERO, -1, Vec3.ZERO, 1f, 0f, 0f, 0f, 0xFFFFFF, 0L, 0);
         assertEquals(-1, roundTrip(PlayEffectPayload.STREAM_CODEC, payload).entityId());
     }
 

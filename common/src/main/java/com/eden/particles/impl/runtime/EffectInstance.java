@@ -90,6 +90,23 @@ public final class EffectInstance {
     }
 
     /**
+     * Joins an effect already {@code ticks} old without spawning the backlog: a looping effect lands at the same
+     * point in its loop as everyone else's; a finished one-shot ends.
+     */
+    public void fastForward(int ticks) {
+        if (ticks <= 0) return;
+        int duration = effect.duration();
+        if (effect.definition().loop()) {
+            loops = ticks / duration;
+            age = ticks % duration;
+        } else if (ticks >= duration) {
+            finished = true;
+        } else {
+            age = ticks;
+        }
+    }
+
+    /**
      * Runs one tick after {@link #prepare}. {@code keep} and {@code keepImportant} are level-of-detail keep fractions.
      *
      * @return spawn attempts before level-of-detail filtering, for the global budget

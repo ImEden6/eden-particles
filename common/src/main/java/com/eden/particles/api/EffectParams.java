@@ -18,6 +18,7 @@ public final class EffectParams {
     private final int tint;
     private final OptionalLong seed;
     private final float range;
+    private final boolean persistent;
 
     private EffectParams(Builder builder) {
         this.scale = builder.scale;
@@ -27,6 +28,7 @@ public final class EffectParams {
         this.tint = builder.tint;
         this.seed = builder.seed;
         this.range = builder.range;
+        this.persistent = builder.persistent;
     }
 
     public static Builder builder() {
@@ -65,6 +67,11 @@ public final class EffectParams {
         return range;
     }
 
+    /** @see Builder#persistent() */
+    public boolean persistent() {
+        return persistent;
+    }
+
     public static final class Builder {
         private float scale = 1f;
         private float yaw;
@@ -73,6 +80,7 @@ public final class EffectParams {
         private int tint = 0xFFFFFF;
         private OptionalLong seed = OptionalLong.empty();
         private float range = DEFAULT_RANGE;
+        private boolean persistent;
 
         private Builder() {
         }
@@ -104,6 +112,16 @@ public final class EffectParams {
         public Builder range(float range) {
             if (!(range > 0f)) throw new IllegalArgumentException("range must be positive, got " + range);
             this.range = range;
+            return this;
+        }
+
+        /**
+         * Server only, for looping effects: the server keeps re-sending the effect to players who come into range,
+         * joined mid-loop, until {@link EffectHandle#stop()} is called or the anchor entity is removed. Ignored by
+         * {@link EdenParticles#playFor}.
+         */
+        public Builder persistent() {
+            this.persistent = true;
             return this;
         }
 

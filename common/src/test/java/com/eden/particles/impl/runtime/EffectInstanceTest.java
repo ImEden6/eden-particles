@@ -183,6 +183,38 @@ class EffectInstanceTest {
     }
 
     @Test
+    void lateJoinersLandMidLoopWithoutTheBacklog() {
+        BakedEffect fx = effect("10, \"loop\": true", "{\"duration\": 10, \"template\": $T, \"spawn\": {\"bursts\": [{\"at\": 3, \"count\": 4}]}}");
+        EffectInstance joiner = new EffectInstance(fx, ORIGIN, PlayParams.of(1));
+        joiner.fastForward(23); // third loop, tick 3: the burst fires on the joiner's first tick, in step with everyone
+        assertTrue(joiner.prepare());
+        assertEquals(4, joiner.tick((tpl, x, y, z, vx, vy, vz, life, scale, tint) -> { }, 1f, 1f));
+        for (int tick = 24; tick < 33; tick++) {
+            joiner.prepare();
+            assertEquals(0, joiner.tick((tpl, x, y, z, vx, vy, vz, life, scale, tint) -> { }, 1f, 1f), "tick " + tick);
+        }
+        joiner.prepare();
+        assertEquals(4, joiner.tick((tpl, x, y, z, vx, vy, vz, life, scale, tint) -> { }, 1f, 1f)); // tick 33: next loop's burst
+    }
+
+    @Test
+    void lateJoinersOfAFinishedOneShotSeeNothing() {
+        BakedEffect fx = effect("10", "{\"duration\": 10, \"template\": $T, \"spawn\": {\"rate\": 1}}");
+        EffectInstance joiner = new EffectInstance(fx, ORIGIN, PlayParams.of(1));
+        joiner.fastForward(10);
+        assertFalse(joiner.prepare());
+
+        EffectInstance midway = new EffectInstance(fx, ORIGIN, PlayParams.of(1));
+        midway.fastForward(6);
+        int ticks = 0;
+        while (midway.prepare()) {
+            midway.tick((tpl, x, y, z, vx, vy, vz, life, scale, tint) -> { }, 1f, 1f);
+            ticks++;
+        }
+        assertEquals(4, ticks);
+    }
+
+    @Test
     void stoppingOrLosingTheAnchorEndsTheEffect() {
         BakedEffect fx = effect("100", "{\"duration\": 100, \"template\": $T, \"spawn\": {\"rate\": 1}}");
         EffectInstance stopped = new EffectInstance(fx, ORIGIN, PlayParams.of(1));

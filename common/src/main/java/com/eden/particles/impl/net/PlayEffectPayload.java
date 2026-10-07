@@ -12,6 +12,7 @@ import net.minecraft.world.phys.Vec3;
  * it is the fallback if the client doesn't have that entity. Rotation is yaw, pitch, roll in degrees.
  *
  * @param entityId -1 for a fixed position
+ * @param elapsed  ticks since the effect started; non-zero when re-sent to a late joiner
  */
 public record PlayEffectPayload(
         int instanceId,
@@ -24,7 +25,8 @@ public record PlayEffectPayload(
         float pitch,
         float roll,
         int tint,
-        long seed) implements CustomPacketPayload {
+        long seed,
+        int elapsed) implements CustomPacketPayload {
 
     public static final Type<PlayEffectPayload> TYPE = new Type<>(Constants.id("play"));
 
@@ -41,6 +43,7 @@ public record PlayEffectPayload(
                 buf.writeFloat(p.roll);
                 buf.writeInt(p.tint);
                 buf.writeLong(p.seed);
+                buf.writeVarInt(p.elapsed);
             },
             buf -> new PlayEffectPayload(
                     buf.readVarInt(),
@@ -53,7 +56,8 @@ public record PlayEffectPayload(
                     buf.readFloat(),
                     buf.readFloat(),
                     buf.readInt(),
-                    buf.readLong()));
+                    buf.readLong(),
+                    buf.readVarInt()));
 
     @Override
     public Type<? extends CustomPacketPayload> type() {

@@ -1,10 +1,12 @@
 package com.eden.particles;
 
 import com.eden.particles.impl.ServerCommands;
+import com.eden.particles.impl.ServerEffects;
 import com.eden.particles.platform.ForgeNetworking;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.RegisterCommandsEvent;
+import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import net.minecraftforge.fml.loading.FMLEnvironment;
@@ -16,6 +18,7 @@ public class EdenParticlesForge {
         EdenParticlesCommon.init();
         ForgeNetworking.init();
         MinecraftForge.EVENT_BUS.addListener((RegisterCommandsEvent event) -> ServerCommands.register(event.getDispatcher()));
+        MinecraftForge.EVENT_BUS.addListener((TickEvent.ServerTickEvent.Post event) -> ServerEffects.tick(event.getServer()));
         if (FMLEnvironment.dist == Dist.CLIENT) {
             EdenParticlesForgeClient.init(context.getModEventBus());
         }
