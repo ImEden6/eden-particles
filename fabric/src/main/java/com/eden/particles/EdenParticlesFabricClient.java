@@ -5,6 +5,7 @@ import com.eden.particles.impl.client.ClientEffects;
 import com.eden.particles.impl.client.EffectReloadListener;
 import com.eden.particles.impl.net.PlayEffectPayload;
 import com.eden.particles.impl.net.StopEffectPayload;
+import com.eden.particles.impl.net.SyncDefinitionsPayload;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
@@ -23,6 +24,7 @@ public class EdenParticlesFabricClient implements ClientModInitializer {
         ClientTickEvents.END_CLIENT_TICK.register(client -> ClientEffects.tick());
         ClientPlayNetworking.registerGlobalReceiver(PlayEffectPayload.TYPE, (payload, context) -> ClientEffects.HOOKS.handle(payload));
         ClientPlayNetworking.registerGlobalReceiver(StopEffectPayload.TYPE, (payload, context) -> ClientEffects.HOOKS.handle(payload));
+        ClientPlayNetworking.registerGlobalReceiver(SyncDefinitionsPayload.TYPE, (payload, context) -> ClientEffects.HOOKS.handle(payload));
         ClientCommandRegistrationCallback.EVENT.register((dispatcher, context) ->
                 dispatcher.register(ClientCommands.create((source, message) -> source.sendFeedback(message))));
     }

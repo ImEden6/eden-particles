@@ -7,7 +7,14 @@ import com.eden.particles.api.EffectParams;
 import com.eden.particles.impl.ClientHooks;
 import com.eden.particles.impl.math.Rotations;
 import com.eden.particles.impl.net.PlayEffectPayload;
+import com.eden.particles.impl.load.DefinitionError;
+import com.eden.particles.impl.load.DefinitionStore;
+import com.eden.particles.impl.load.ParsedDefinitions;
+import com.eden.particles.impl.load.RawDefinition;
 import com.eden.particles.impl.net.StopEffectPayload;
+import com.eden.particles.impl.net.SyncDefinitionsPayload;
+import com.google.gson.JsonParseException;
+import com.google.gson.JsonParser;
 import com.eden.particles.impl.runtime.Anchor;
 import com.eden.particles.impl.runtime.EffectInstance;
 import com.eden.particles.impl.runtime.PlayParams;
@@ -16,8 +23,10 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.phys.Vec3;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -28,6 +37,8 @@ final class ClientHooksImpl implements ClientHooks {
     private final EffectManager manager;
     private final Map<Integer, EffectInstance> fromServer = new HashMap<>();
     private final Set<ResourceLocation> warnedUnknown = new HashSet<>();
+    private final List<SyncDefinitionsPayload.Entry> incoming = new ArrayList<>();
+    private List<SyncDefinitionsPayload.Entry> applied = List.of();
 
     ClientHooksImpl(EffectManager manager) {
         this.manager = manager;
@@ -78,6 +89,42 @@ final class ClientHooksImpl implements ClientHooks {
             EffectInstance instance = fromServer.remove(p.instanceId());
             if (instance != null) instance.stop();
         }
+    }
+
+    @Override
+    public void handle(SyncDefinitionsPayload payload) {
+        if (payload.first()) incoming.clear();
+        incoming.addAll(payload.entries());
+        if (!payload.last()) return;
+        List<SyncDefinitionsPayload.Entry> received = List.copyOf(incoming);
+        incoming.clear();
+        // /reload re-sends unchanged definitions; replacing them would needlessly stop every playing effect.
+        if (received.equals(applied)) return;
+        applied = received;
+        ClientEffects.report(ClientEffects.STORE.replace(DefinitionStore.Layer.DATAPACK, parse(received)));
+    }
+
+    /** Drops the server's datapack definitions after disconnecting. */
+    void tick(Minecraft minecraft) {
+        if (minecraft.getConnection() == null && !applied.isEmpty()) {
+            applied = List.of();
+            ClientEffects.STORE.replace(DefinitionStore.Layer.DATAPACK, ParsedDefinitions.EMPTY);
+        }
+    }
+
+    private static ParsedDefinitions parse(List<SyncDefinitionsPayload.Entry> entries) {
+        List<RawDefinition> templates = new ArrayList<>();
+        List<RawDefinition> effects = new ArrayList<>();
+        List<DefinitionError> errors = new ArrayList<>();
+        for (SyncDefinitionsPayload.Entry entry : entries) {
+            try {
+                RawDefinition raw = new RawDefinition(entry.id(), "server datapack", JsonParser.parseString(entry.json()));
+                (entry.kind() == DefinitionError.Kind.TEMPLATE ? templates : effects).add(raw);
+            } catch (JsonParseException e) {
+                errors.add(new DefinitionError(entry.kind(), entry.id(), "server datapack", "invalid JSON: " + e.getMessage()));
+            }
+        }
+        return ParsedDefinitions.parse(templates, effects, errors);
     }
 
     private Optional<EffectInstance> start(ResourceLocation effect, Anchor anchor, PlayParams params) {

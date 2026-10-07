@@ -8,6 +8,8 @@ assets/<namespace>/eden_particles/templates/<path>.json  → template <namespace
 assets/<namespace>/textures/particle/<name>.png          → sprite   <namespace>:<name>
 ```
 
+Effects and templates can also come from a **datapack**, under `data/<namespace>/eden_particles/{effects,templates}/`. The server sends them to every player with the mod when they join and after `/reload`. A datapack definition overrides a resource-pack one with the same id, and can use resource-pack templates. Sprites still have to come from a resource pack, because textures can't be sent through a datapack. Leaving the server removes its datapack definitions.
+
 Sprites go in the vanilla particle atlas, so any PNG under `textures/particle/` works with no extra configuration. Vanilla sprites work too (`"minecraft:bubble"`, `"minecraft:flame"`).
 
 All times are in **ticks** (20 per second). Distances are in blocks. Speeds are in blocks per tick.

@@ -4,6 +4,7 @@ import com.eden.particles.Constants;
 import com.eden.particles.impl.Sides;
 import com.eden.particles.impl.net.PlayEffectPayload;
 import com.eden.particles.impl.net.StopEffectPayload;
+import com.eden.particles.impl.net.SyncDefinitionsPayload;
 import com.eden.particles.platform.services.INetworking;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.server.level.ServerPlayer;
@@ -21,6 +22,7 @@ public class ForgeNetworking implements INetworking {
             .clientbound()
             .addMain(PlayEffectPayload.TYPE, PlayEffectPayload.STREAM_CODEC, (payload, context) -> Sides.client().ifPresent(client -> client.handle(payload)))
             .addMain(StopEffectPayload.TYPE, StopEffectPayload.STREAM_CODEC, (payload, context) -> Sides.client().ifPresent(client -> client.handle(payload)))
+            .addMain(SyncDefinitionsPayload.TYPE, SyncDefinitionsPayload.STREAM_CODEC, (payload, context) -> Sides.client().ifPresent(client -> client.handle(payload)))
             .build();
 
     /** Channels must exist before players connect; called from the mod constructor. */
