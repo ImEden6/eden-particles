@@ -8,13 +8,41 @@ assets/<namespace>/eden_particles/templates/<path>.json  → template <namespace
 assets/<namespace>/textures/particle/<name>.png          → sprite   <namespace>:<name>
 ```
 
-Effects and templates can also come from a **datapack**, under `data/<namespace>/eden_particles/{effects,templates}/`. The server sends them to every player with the mod when they join and after `/reload`. A datapack definition overrides a resource-pack one with the same id, and can use resource-pack templates. Sprites still have to come from a resource pack, because textures can't be sent through a datapack. Leaving the server removes its datapack definitions.
+Effects and templates can also come from a **datapack**, under `data/<namespace>/eden_particles/{effects,templates}/`. The server sends them to every player with the mod when they join and after `/reload`. A datapack definition overrides a resource-pack one with the same id, and can use resource-pack templates. Sprites still have to come from a resource pack, because textures can't be sent through a datapack (see [Custom images on a server](#custom-images-on-a-server)). Leaving the server removes its datapack definitions.
 
 Sprites go in the vanilla particle atlas, so any PNG under `textures/particle/` works with no extra configuration. Vanilla sprites work too (`"minecraft:bubble"`, `"minecraft:flame"`).
 
 All times are in **ticks** (20 per second). Distances are in blocks. Speeds are in blocks per tick.
 
 Reload with `F3+T`. `/eden_particles_client errors` lists any problems, and `/eden_particles_client play <effect>` plays one in front of you. The mod ships working examples under `eden_particles:examples/…`.
+
+## Custom images on a server
+
+Datapacks can define effects but can't carry images. To give a datapack effect its own sprites without a mod, ship the images in a **server resource pack**, which players download automatically when they join.
+
+1. **Make a resource pack** with your PNGs:
+   ```
+   my_particles.zip
+   ├── pack.mcmeta
+   └── assets/mypack/textures/particle/
+       ├── ember.png
+       └── smoke_puff.png
+   ```
+   `pack.mcmeta` goes at the root of the zip, not inside a folder. For 1.21.1 it looks like this:
+   ```json
+   { "pack": { "pack_format": 34, "description": "Particle images" } }
+   ```
+2. **Use the images** from your datapack templates as `"sprite": "mypack:ember"`. The id is the namespace folder, then the file name without `.png`.
+3. **Host the zip** at a URL that downloads the file directly, such as a GitHub release asset or your own web server. A share page that shows a "Download" button won't work.
+4. **Point the server at it** in `server.properties`:
+   ```properties
+   resource-pack=https://example.com/my_particles.zip
+   resource-pack-sha1=<the zip's SHA-1>
+   require-resource-pack=true
+   ```
+   Get the SHA-1 on Windows with `certutil -hashfile my_particles.zip SHA1`, or `sha1sum my_particles.zip` elsewhere. Clients use it to notice when the pack changes. Update it whenever you change the zip. `require-resource-pack=true` disconnects players who decline. Leave it `false` to let them join anyway: they'll still see the effects, but with a missing-texture checkerboard where your images should be, and a warning naming the missing sprite in their log.
+
+In singleplayer, put the zip in `.minecraft/resourcepacks` and turn it on under Options → Resource Packs.
 
 ## Effect
 
