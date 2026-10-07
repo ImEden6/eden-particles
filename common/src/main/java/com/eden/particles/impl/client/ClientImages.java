@@ -1,6 +1,7 @@
 package com.eden.particles.impl.client;
 
 import com.eden.particles.Constants;
+import com.eden.particles.impl.images.ImageLimits;
 import com.eden.particles.impl.net.ImagePayloads;
 import com.eden.particles.platform.Services;
 import net.minecraft.client.Minecraft;
@@ -25,6 +26,10 @@ final class ClientImages {
     private List<ImagePayloads.Image> applied = List.of();
     private Set<ResourceLocation> withheld = Set.of();
     private Boolean sessionAnswer;
+    /** Set once this client has accepted an offer this session; images arriving otherwise are refused. */
+    private boolean accepted;
+    private long incomingBytes;
+    private boolean incomingRejected;
     private ImagePayloads.Offer waiting;
     private ImagePayloads.Offer shownOffer;
     private ImageConsentScreen shown;
@@ -67,9 +72,28 @@ final class ClientImages {
     }
 
     void handle(ImagePayloads.Images payload) {
-        if (payload.first()) incoming.clear();
-        incoming.addAll(payload.images());
+        if (payload.first()) {
+            incoming.clear();
+            incomingBytes = 0;
+            incomingRejected = false;
+        }
+        if (!payload.images().isEmpty() && !accepted) {
+            incomingRejected = true;
+            Constants.LOG.warn("Ignoring particle images the server sent without consent");
+        }
+        for (ImagePayloads.Image image : payload.images()) {
+            incomingBytes += image.bytes().length;
+            if (incoming.size() >= ImageLimits.MAX_IMAGES || incomingBytes > ImageLimits.MAX_TOTAL_BYTES) {
+                if (!incomingRejected) Constants.LOG.error("Server sent more particle images than allowed; ignoring them");
+                incomingRejected = true;
+            }
+            if (!incomingRejected) incoming.add(image);
+        }
         if (!payload.last()) return;
+        if (incomingRejected) {
+            incoming.clear();
+            return;
+        }
         List<ImagePayloads.Image> received = List.copyOf(incoming);
         incoming.clear();
         if (received.equals(applied)) {
@@ -92,6 +116,11 @@ final class ClientImages {
             shown = null;
             shownOffer = null;
         }
+        if (waiting != null && sessionAnswer != null) {
+            // Answered another prompt in the meantime: apply that answer instead of asking twice.
+            answer(waiting, sessionAnswer);
+            waiting = null;
+        }
         if (waiting != null && minecraft.screen == null && minecraft.player != null) {
             ImagePayloads.Offer offer = waiting;
             waiting = null;
@@ -110,6 +139,7 @@ final class ClientImages {
     }
 
     private void answer(ImagePayloads.Offer offer, boolean accepted) {
+        if (accepted) this.accepted = true;
         Services.NETWORK.sendToServer(new ImagePayloads.Consent(offer.revision(), accepted));
     }
 
@@ -122,6 +152,7 @@ final class ClientImages {
     private void reset() {
         applied = List.of();
         sessionAnswer = null;
+        accepted = false;
         waiting = null;
         shown = null;
         shownOffer = null;

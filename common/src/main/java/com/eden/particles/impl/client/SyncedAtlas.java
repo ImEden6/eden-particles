@@ -68,7 +68,11 @@ final class SyncedAtlas {
                     ids = result.ids();
                     onErrors.accept(result.errors());
                     onUploaded.run();
-                }, Minecraft.getInstance());
+                }, Minecraft.getInstance())
+                .exceptionally(error -> {
+                    Constants.LOG.error("Couldn't build the atlas for server particle images; they won't show", error);
+                    return null;
+                });
     }
 
     private record Stitched(SpriteLoader.Preparations preparations, Set<ResourceLocation> ids, List<DefinitionError> errors) {

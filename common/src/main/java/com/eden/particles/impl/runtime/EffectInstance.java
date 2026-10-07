@@ -119,7 +119,7 @@ public final class EffectInstance {
             EmitterState state = states[emitter.index()];
             long seed = emitterSeeds[emitter.index()];
             int local = age - track.start();
-            state.spinDegrees += emitter.spin().sample((local + 0.5f) / track.duration());
+            state.spinDegrees = (state.spinDegrees + emitter.spin().sample((local + 0.5f) / track.duration())) % 360f;
             float fraction = track.important() ? keepImportant : keep;
 
             if (emitter.rate().isPresent()) {

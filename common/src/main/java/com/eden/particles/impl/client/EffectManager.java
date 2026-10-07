@@ -139,7 +139,8 @@ public final class EffectManager {
             store.effect(id).ifPresent(linked -> next.put(id, BakedEffect.bake(linked)));
         }
         baked = Map.copyOf(next);
-        clear();
+        // Playing effects keep their old definitions until they end; stopping them would lose server-started
+        // persistent effects, which the server won't send again.
         sink.clearCaches();
     }
 }

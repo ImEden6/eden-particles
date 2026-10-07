@@ -7,6 +7,7 @@ import com.eden.particles.impl.load.DefinitionFiles;
 import com.eden.particles.impl.load.LoadReport;
 import com.eden.particles.impl.load.ParsedDefinitions;
 import com.eden.particles.impl.load.RawDefinition;
+import com.eden.particles.impl.net.Batches;
 import com.eden.particles.impl.net.ImagePayloads;
 import com.eden.particles.impl.net.SyncDefinitionsPayload;
 import com.eden.particles.platform.Services;
@@ -87,23 +88,10 @@ public class DatapackDefinitions extends SimplePreparableReloadListener<Datapack
 
     /** Always at least one batch, so the client's layer is replaced even when there's nothing to send. */
     static List<SyncDefinitionsPayload> batches(List<SyncDefinitionsPayload.Entry> entries, int budgetBytes) {
-        List<List<SyncDefinitionsPayload.Entry>> groups = new ArrayList<>();
-        List<SyncDefinitionsPayload.Entry> current = new ArrayList<>();
-        int size = 0;
-        for (SyncDefinitionsPayload.Entry entry : entries) {
-            int cost = estimateBytes(entry);
-            if (!current.isEmpty() && size + cost > budgetBytes) {
-                groups.add(current);
-                current = new ArrayList<>();
-                size = 0;
-            }
-            current.add(entry);
-            size += cost;
-        }
-        groups.add(current);
+        List<List<SyncDefinitionsPayload.Entry>> groups = Batches.split(entries, DatapackDefinitions::estimateBytes, budgetBytes);
         List<SyncDefinitionsPayload> payloads = new ArrayList<>(groups.size());
         for (int i = 0; i < groups.size(); i++) {
-            payloads.add(new SyncDefinitionsPayload(i == 0, i == groups.size() - 1, List.copyOf(groups.get(i))));
+            payloads.add(new SyncDefinitionsPayload(i == 0, i == groups.size() - 1, groups.get(i)));
         }
         return payloads;
     }

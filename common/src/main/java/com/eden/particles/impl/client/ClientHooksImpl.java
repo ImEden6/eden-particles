@@ -43,10 +43,7 @@ final class ClientHooksImpl implements ClientHooks {
 
     ClientHooksImpl(EffectManager manager) {
         this.manager = manager;
-        ClientEffects.STORE.onReload(report -> {
-            fromServer.clear();
-            warnedUnknown.clear();
-        });
+        ClientEffects.STORE.onReload(report -> warnedUnknown.clear());
     }
 
     @Override

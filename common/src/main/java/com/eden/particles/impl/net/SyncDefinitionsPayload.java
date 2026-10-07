@@ -39,7 +39,7 @@ public record SyncDefinitionsPayload(boolean first, boolean last, List<Entry> en
                 boolean first = buf.readBoolean();
                 boolean last = buf.readBoolean();
                 int count = buf.readVarInt();
-                List<Entry> entries = new ArrayList<>(count);
+                List<Entry> entries = new ArrayList<>(Math.max(0, Math.min(count, buf.readableBytes())));
                 for (int i = 0; i < count; i++) {
                     entries.add(new Entry(buf.readEnum(DefinitionError.Kind.class), buf.readResourceLocation(), buf.readUtf(MAX_JSON_LENGTH)));
                 }

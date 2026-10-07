@@ -1,6 +1,7 @@
 package com.eden.particles.impl.images;
 
 import com.eden.particles.impl.load.DefinitionError;
+import com.eden.particles.impl.net.Batches;
 import com.eden.particles.impl.net.ImagePayloads;
 import com.eden.particles.platform.Services;
 import net.minecraft.resources.FileToIdConverter;
@@ -19,8 +20,7 @@ import java.util.WeakHashMap;
 
 /**
  * Datapack images ({@code data/<ns>/eden_particles/textures/**.png}). They're offered to each player and only sent
- * after the player consents; a player's answer holds for their session (keyed weakly by the player object, which
- * is new on every login).
+ * after the player consents (keyed weakly by the player object, which is new on every login).
  */
 public final class ServerImages {
 
@@ -30,9 +30,10 @@ public final class ServerImages {
     private static List<ImagePayloads.Image> images = List.of();
     private static long totalBytes;
     private static int revision;
-    private static final Map<ServerPlayer, Boolean> consent = new WeakHashMap<>();
-    /** Revision last offered or sent to each player, so repeated syncs don't re-offer the same set. */
+    /** Revision last offered to each player, so repeated syncs don't re-offer the same set. */
     private static final Map<ServerPlayer, Integer> delivered = new WeakHashMap<>();
+    /** Revision whose images each player already has, so repeated consents can't trigger repeated sends. */
+    private static final Map<ServerPlayer, Integer> sentImages = new WeakHashMap<>();
 
     private ServerImages() {
     }
@@ -69,7 +70,7 @@ public final class ServerImages {
         return List.copyOf(accepted);
     }
 
-    /** Server thread. A changed set gets a new revision; players who already consented this session keep consenting. */
+    /** Server thread. A changed set gets a new revision, which is offered again on the next sync. */
     public static void replace(List<ImagePayloads.Image> next) {
         if (next.equals(images)) return;
         images = next;
@@ -81,15 +82,13 @@ public final class ServerImages {
         return images.size();
     }
 
-    /** On join and after {@code /reload}: an empty set clears the client; otherwise offer, or send if already agreed. */
+    /** On join and after {@code /reload}: an empty set clears the client; otherwise offer (clients that agreed accept automatically). */
     public static void syncTo(ServerPlayer player) {
         if (!Services.NETWORK.canSend(player, ImagePayloads.Offer.TYPE)) return;
         Integer last = delivered.put(player, revision);
         if (last != null && last == revision) return;
         if (images.isEmpty()) {
             Services.NETWORK.send(player, new ImagePayloads.Images(true, true, List.of()));
-        } else if (Boolean.TRUE.equals(consent.get(player))) {
-            sendImages(player);
         } else {
             Services.NETWORK.send(player, new ImagePayloads.Offer(revision,
                     images.stream().map(ImagePayloads.Image::id).toList(), totalBytes));
@@ -99,32 +98,17 @@ public final class ServerImages {
     /** Server thread, from the client's answer. Answers to an older offer are ignored; a fresh offer follows. */
     public static void onConsent(ServerPlayer player, ImagePayloads.Consent answer) {
         if (answer.revision() != revision) return;
-        consent.put(player, answer.accepted());
-        if (answer.accepted()) sendImages(player);
-    }
-
-    private static void sendImages(ServerPlayer player) {
+        if (!answer.accepted()) return;
+        Integer has = sentImages.put(player, revision);
+        if (has != null && has == revision) return;
         batches(images, BATCH_BYTES).forEach(payload -> Services.NETWORK.send(player, payload));
     }
 
     static List<ImagePayloads.Images> batches(List<ImagePayloads.Image> all, int budgetBytes) {
-        List<List<ImagePayloads.Image>> groups = new ArrayList<>();
-        List<ImagePayloads.Image> current = new ArrayList<>();
-        int size = 0;
-        for (ImagePayloads.Image image : all) {
-            int cost = image.bytes().length + image.id().toString().length() + 16;
-            if (!current.isEmpty() && size + cost > budgetBytes) {
-                groups.add(current);
-                current = new ArrayList<>();
-                size = 0;
-            }
-            current.add(image);
-            size += cost;
-        }
-        groups.add(current);
-        List<ImagePayloads.Images> payloads = new ArrayList<>();
+        List<List<ImagePayloads.Image>> groups = Batches.split(all, image -> image.bytes().length + image.id().toString().length() + 16, budgetBytes);
+        List<ImagePayloads.Images> payloads = new ArrayList<>(groups.size());
         for (int i = 0; i < groups.size(); i++) {
-            payloads.add(new ImagePayloads.Images(i == 0, i == groups.size() - 1, List.copyOf(groups.get(i))));
+            payloads.add(new ImagePayloads.Images(i == 0, i == groups.size() - 1, groups.get(i)));
         }
         return payloads;
     }
