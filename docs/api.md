@@ -105,6 +105,8 @@ Both are client-only and do nothing on a dedicated server.
 | `/eden_particles play <effect> <pos> persistent` | server, op 2 | The same, but players who arrive later get it too. |
 | `/eden_particles play <effect> <pos> with <inputs>` | server, op 2 | Plays with inputs, written `power=2 spread=0.5`. |
 | `/eden_particles beam <effect> <from> <to> [inputs]` | server, op 2 | Plays between two entities' eyes, following both. |
+| `/eden_particles attach <effect> <entity> <none\|body\|look> <feet\|eyes> [x y z] [inputs]` | server, op 2 | Plays on an entity with a turning anchor; the offset is in the entity's frame when turning. |
+| `/eden_particles set <input> <value>` | server, op 2 | Changes an input on every effect these commands started that is still playing, like `EffectHandle.setInput`. |
 | `/eden_particles stop [targets]` | server, op 2 | Stops every server-started effect for those players. Without targets, it also forgets the dimension's persistent effects. |
 | `/eden_particles_client play <effect> [inputs]` | client | Plays locally, in front of you. Tab completes loaded effects. |
 | `/eden_particles_client errors` | client | Lists definition errors from the last reload. |

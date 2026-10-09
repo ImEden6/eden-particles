@@ -92,6 +92,8 @@ final class SmokeTest {
         beam.stop();
         commands.execute("eden_particles beam eden_smoke:burst @e[type=armor_stand,limit=1] @e[type=armor_stand,limit=1] power=2", source);
         commands.execute("eden_particles play eden_smoke:burst 0 64 0 with power=2 spread=1", source);
+        commands.execute("eden_particles attach eden_smoke:burst @e[type=armor_stand,limit=1] look eyes 0 0 0.5 power=1", source);
+        commands.execute("eden_particles set power 2", source);
         caster.discard();
     }
 

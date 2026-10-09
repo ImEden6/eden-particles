@@ -6,6 +6,9 @@ eden_particles:examples/arcane_burst transformed	ticks=60 attempts=291 spawns=29
 eden_particles:examples/beam half	ticks=400 attempts=600 spawns=304 templates=1 hash=df20687a26474819 box=[0.35 63.85 0.50 | 0.65 64.15 0.50] speed=0.0000 life=12.90
 eden_particles:examples/beam plain	ticks=400 attempts=600 spawns=600 templates=1 hash=c33a5e37953df71f box=[0.35 63.85 0.50 | 0.65 64.15 0.50] speed=0.0000 life=12.97
 eden_particles:examples/beam transformed	ticks=400 attempts=600 spawns=600 templates=1 hash=fe99c7602895c2ca box=[0.40 63.78 0.30 | 0.60 64.22 0.70] speed=0.0000 life=13.04
+eden_particles:examples/breath half	ticks=400 attempts=3200 spawns=1599 templates=1 hash=41746fa5f50d6abc box=[0.18 63.68 0.55 | 0.82 64.33 1.33] speed=0.8526 life=12.98
+eden_particles:examples/breath plain	ticks=400 attempts=3200 spawns=3200 templates=1 hash=be3d00e3f806b227 box=[0.16 63.66 0.55 | 0.85 64.33 1.34] speed=0.8519 life=13.03
+eden_particles:examples/breath transformed	ticks=400 attempts=3200 spawns=3200 templates=1 hash=b1a7db881a31477f box=[0.55 63.30 0.50 | 1.75 64.30 1.44] speed=1.2775 life=13.06
 eden_particles:examples/campfire_smoke half	ticks=400 attempts=157 spawns=73 templates=1 hash=b93596e94309f775 box=[0.21 64.37 0.22 | 0.80 64.50 0.80] speed=0.0704 life=105.71
 eden_particles:examples/campfire_smoke plain	ticks=400 attempts=157 spawns=157 templates=1 hash=de89e4bb78776905 box=[0.20 64.37 0.19 | 0.80 64.50 0.80] speed=0.0694 life=108.45
 eden_particles:examples/campfire_smoke transformed	ticks=400 attempts=168 spawns=168 templates=1 hash=cccc065fafb49007 box=[0.07 64.47 0.02 | 1.14 64.81 1.15] speed=0.1047 life=107.97

@@ -1,9 +1,13 @@
 package com.eden.particles.impl;
 
 import com.eden.particles.api.EffectAnchor;
+import com.eden.particles.api.EffectHandle;
 import com.eden.particles.api.EffectParams;
 import com.mojang.brigadier.CommandDispatcher;
+import com.mojang.brigadier.arguments.FloatArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
+import com.mojang.brigadier.builder.LiteralArgumentBuilder;
+import com.mojang.brigadier.builder.RequiredArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import net.minecraft.commands.CommandSourceStack;
@@ -11,22 +15,31 @@ import net.minecraft.commands.Commands;
 import net.minecraft.commands.arguments.EntityArgument;
 import net.minecraft.commands.arguments.ResourceLocationArgument;
 import net.minecraft.commands.arguments.coordinates.Vec3Argument;
+import net.minecraft.commands.arguments.selector.EntitySelector;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.phys.Vec3;
 
+import java.util.ArrayDeque;
 import java.util.Collection;
+import java.util.Deque;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * {@code /eden_particles play <effect> [pos] [targets | persistent | with <inputs>]},
- * {@code beam <effect> <from> <to> [<inputs>]} and {@code stop [targets]}; a plain {@code stop} also forgets the
+ * {@code beam <effect> <from> <to> [<inputs>]}, {@code attach <effect> <entity> <turning> <feet|eyes> [x y z] [inputs]},
+ * {@code set <input> <value>} (on effects these commands started) and {@code stop [targets]}; a plain {@code stop} also forgets the
  * level's persistent effects. Inputs are written {@code power=2 spread=0.5}. Effect ids aren't suggested: they live in
  * client resource packs, which the server can't see.
  */
 public final class ServerCommands {
+
+    private static final int MAX_RECENT = 32;
+    /** Effects started by these commands, for {@code set}. */
+    private static final Deque<EffectHandle> RECENT = new ArrayDeque<>();
 
     private ServerCommands() {
     }
@@ -54,6 +67,12 @@ public final class ServerCommands {
                                                 .executes(c -> beam(c, ""))
                                                 .then(Commands.argument("inputs", StringArgumentType.greedyString())
                                                         .executes(c -> beam(c, StringArgumentType.getString(c, "inputs"))))))))
+                .then(attach())
+                .then(Commands.literal("set")
+                        .then(Commands.argument("input", StringArgumentType.word())
+                                .then(Commands.argument("value", FloatArgumentType.floatArg())
+                                        .executes(c -> set(c.getSource(), StringArgumentType.getString(c, "input"),
+                                                FloatArgumentType.getFloat(c, "value"))))))
                 .then(Commands.literal("stop")
                         .executes(c -> {
                             ServerEffects.forgetPersistent(c.getSource().getLevel());
@@ -61,6 +80,56 @@ public final class ServerCommands {
                         })
                         .then(Commands.argument("targets", EntityArgument.players())
                                 .executes(c -> stop(c, EntityArgument.getPlayers(c, "targets"))))));
+    }
+
+    /** {@code attach <effect> <entity> <none|body|look> <feet|eyes> [<x> <y> <z>] [inputs]} */
+    private static LiteralArgumentBuilder<CommandSourceStack> attach() {
+        RequiredArgumentBuilder<CommandSourceStack, EntitySelector> entity = Commands.argument("entity", EntityArgument.entity());
+        for (EffectAnchor.Turning turning : EffectAnchor.Turning.values()) {
+            LiteralArgumentBuilder<CommandSourceStack> turningNode = Commands.literal(turning.name().toLowerCase(Locale.ROOT));
+            for (boolean eyes : new boolean[]{false, true}) {
+                turningNode.then(Commands.literal(eyes ? "eyes" : "feet")
+                        .executes(c -> attach(c, turning, eyes, Vec3.ZERO, ""))
+                        .then(Commands.argument("x", FloatArgumentType.floatArg())
+                                .then(Commands.argument("y", FloatArgumentType.floatArg())
+                                        .then(Commands.argument("z", FloatArgumentType.floatArg())
+                                                .executes(c -> attach(c, turning, eyes, offset(c), ""))
+                                                .then(Commands.argument("inputs", StringArgumentType.greedyString())
+                                                        .executes(c -> attach(c, turning, eyes, offset(c),
+                                                                StringArgumentType.getString(c, "inputs"))))))));
+            }
+            entity.then(turningNode);
+        }
+        return Commands.literal("attach").then(Commands.argument("effect", ResourceLocationArgument.id()).then(entity));
+    }
+
+    private static Vec3 offset(CommandContext<CommandSourceStack> c) {
+        return new Vec3(FloatArgumentType.getFloat(c, "x"), FloatArgumentType.getFloat(c, "y"), FloatArgumentType.getFloat(c, "z"));
+    }
+
+    private static int attach(CommandContext<CommandSourceStack> context, EffectAnchor.Turning turning, boolean eyes,
+                              Vec3 offset, String inputs) throws CommandSyntaxException {
+        CommandSourceStack source = context.getSource();
+        ResourceLocation effect = ResourceLocationArgument.getId(context, "effect");
+        EffectParams params = params(source, inputs);
+        if (params == null) return 0;
+        EffectAnchor anchor = EffectAnchor.entity(EntityArgument.getEntity(context, "entity")).turning(turning).offset(offset);
+        if (eyes) anchor = anchor.eyes();
+        return report(source, effect, ServerEffects.play(source.getLevel(), effect, anchor, params), true);
+    }
+
+    /** Changes an input on every effect started by these commands that is still playing. */
+    private static int set(CommandSourceStack source, String input, float value) {
+        RECENT.removeIf(handle -> !handle.isAlive());
+        try {
+            RECENT.forEach(handle -> handle.setInput(input, value));
+        } catch (IllegalArgumentException e) {
+            source.sendFailure(Component.literal(e.getMessage()));
+            return 0;
+        }
+        int count = RECENT.size();
+        source.sendSuccess(() -> Component.literal("Set " + input + " = " + value + " on " + count + " effect(s)"), true);
+        return count;
     }
 
     private static int play(CommandContext<CommandSourceStack> context, Vec3 pos, Collection<ServerPlayer> targets, String inputs) {
@@ -102,6 +171,8 @@ public final class ServerCommands {
                     : "None of those players have Eden's Particles installed"));
             return 0;
         }
+        RECENT.addLast(result.handle());
+        if (RECENT.size() > MAX_RECENT) RECENT.removeFirst();
         int count = result.recipients();
         source.sendSuccess(() -> Component.literal("Playing " + effect + " for " + count + (count == 1 ? " player" : " players")), true);
         return count;

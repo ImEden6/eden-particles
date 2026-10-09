@@ -44,9 +44,11 @@ tasks.named('test', Test) {
     }
 }
 
-// Client rendering, mixins and loader services need a running game, so coverage counts the rest.
+// Client rendering, mixins, loader services and server commands need a running game (the smoke-server test covers
+// the commands), so coverage counts the rest.
 def coverageClasses = sourceSets.main.output.classesDirs.asFileTree.matching {
-    exclude 'com/eden/particles/impl/client/**', 'com/eden/particles/mixin/**', 'com/eden/particles/platform/**'
+    exclude 'com/eden/particles/impl/client/**', 'com/eden/particles/mixin/**', 'com/eden/particles/platform/**',
+            'com/eden/particles/impl/ServerCommands*', 'com/eden/particles/impl/SmokeTest*'
 }
 
 tasks.named('jacocoTestReport', JacocoReport) {
@@ -76,11 +78,11 @@ tasks.named('jacocoTestCoverageVerification', JacocoCoverageVerification) {
         rule {
             limit {
                 counter = 'LINE'
-                minimum = 0.81
+                minimum = 0.85
             }
             limit {
                 counter = 'BRANCH'
-                minimum = 0.72
+                minimum = 0.75
             }
         }
     }

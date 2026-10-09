@@ -1,0 +1,15 @@
+{
+  "duration": 20,
+  "loop": true,
+  "inputs": { "power": 1 },
+  "emitters": [
+    {
+      "name": "spray",
+      "duration": 20,
+      "template": "eden_particles:examples/shock_spark",
+      "axis": "z",
+      "spawn": { "rate": "2 + power * 6" },
+      "velocity": { "type": "cone", "half_angle": "10 + power * 15", "speed": { "distance": "1 + power * 3" } }
+    }
+  ]
+}
