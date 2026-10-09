@@ -59,7 +59,7 @@ class ImagesTest {
     void batchesStayWithinBudgetAndKeepOrder() {
         List<ImagePayloads.Image> images = new ArrayList<>();
         for (int i = 0; i < 20; i++) images.add(new ImagePayloads.Image(id("img" + i), new byte[300]));
-        List<ImagePayloads.Images> batches = ServerImages.batches(images, 1000);
+        List<ImagePayloads.Images> batches = ImageOffers.batches(images, 1000);
         assertTrue(batches.size() > 1);
         List<ImagePayloads.Image> rejoined = new ArrayList<>();
         for (int i = 0; i < batches.size(); i++) {
@@ -68,7 +68,7 @@ class ImagesTest {
             rejoined.addAll(batches.get(i).images());
         }
         assertEquals(images, rejoined);
-        assertEquals(1, ServerImages.batches(List.of(), 1000).size());
+        assertEquals(1, ImageOffers.batches(List.of(), 1000).size());
     }
 
     private static <T> T roundTrip(StreamCodec<RegistryFriendlyByteBuf, T> codec, T value) {

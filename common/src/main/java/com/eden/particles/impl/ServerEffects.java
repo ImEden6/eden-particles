@@ -74,8 +74,13 @@ public final class ServerEffects {
         });
     }
 
+    static int persistentCount() {
+        return PERSISTENT.size();
+    }
+
     /** Called every server tick by the loader glue. */
     public static void tick(MinecraftServer server) {
+        if (SmokeTest.ENABLED) SmokeTest.tick(server);
         if (PERSISTENT.isEmpty() || server.getTickCount() % LATE_JOIN_INTERVAL != 0) return;
         for (Iterator<Handle> it = PERSISTENT.iterator(); it.hasNext(); ) {
             Handle handle = it.next();

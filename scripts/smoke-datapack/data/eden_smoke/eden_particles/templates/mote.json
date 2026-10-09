@@ -1,0 +1,4 @@
+{
+  "render": { "type": "sprite", "sprite": "eden_smoke:dot" },
+  "lifetime": 20
+}

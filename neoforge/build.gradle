@@ -37,6 +37,13 @@ neoForge {
         server {
             server()
         }
+        // scripts/smoke-server.sh
+        smokeServer {
+            server()
+            gameDirectory = project.file('runs/smoke')
+            systemProperty('eden_particles.smoke', 'true')
+            programArguments.add('--nogui')
+        }
     }
     mods {
         "${mod_id}" {

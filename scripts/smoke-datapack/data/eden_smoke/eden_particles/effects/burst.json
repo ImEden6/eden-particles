@@ -1,0 +1,7 @@
+{
+  "duration": 20,
+  "loop": true,
+  "emitters": [
+    { "duration": 20, "template": "eden_smoke:mote", "spawn": { "rate": 2 } }
+  ]
+}

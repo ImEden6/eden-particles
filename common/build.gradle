@@ -1,6 +1,7 @@
 plugins {
     id 'multiloader-common'
     id 'net.neoforged.moddev'
+    id 'jacoco'
 }
 
 neoForge {
@@ -31,6 +32,73 @@ dependencies {
 
 tasks.named('test', Test) {
     useJUnitPlatform()
+    testLogging {
+        events 'failed'
+        exceptionFormat 'full'
+    }
+    systemProperty 'eden.baselines', file('src/test/resources/baselines').absolutePath
+    inputs.dir('src/test/resources/baselines').optional()
+    if (project.hasProperty('updateBaselines')) {
+        systemProperty 'eden.updateBaselines', 'true'
+        outputs.upToDateWhen { false }
+    }
+}
+
+// Client rendering, mixins and loader services need a running game, so coverage counts the rest.
+def coverageClasses = sourceSets.main.output.classesDirs.asFileTree.matching {
+    exclude 'com/eden/particles/impl/client/**', 'com/eden/particles/mixin/**', 'com/eden/particles/platform/**'
+}
+
+tasks.named('jacocoTestReport', JacocoReport) {
+    dependsOn tasks.named('test')
+    classDirectories.setFrom(coverageClasses)
+    reports {
+        xml.required = true
+        html.required = true
+    }
+    doLast {
+        def parser = new groovy.xml.XmlSlurper(false, false, true)
+        parser.setFeature('http://apache.org/xml/features/nonvalidating/load-external-dtd', false)
+        def xml = parser.parse(reports.xml.outputLocation.get().asFile)
+        xml.counter.findAll { it.@type in ['LINE', 'BRANCH'] }.each {
+            def covered = it.@covered.toInteger()
+            def total = covered + it.@missed.toInteger()
+            logger.lifecycle(String.format(Locale.ROOT, 'Coverage %s: %.1f%% (%d/%d)', it.@type.toString().toLowerCase(), 100.0 * covered / total, covered, total))
+        }
+    }
+}
+
+// The coverage baseline: it may not drop below these. Raise them when tests are added.
+tasks.named('jacocoTestCoverageVerification', JacocoCoverageVerification) {
+    dependsOn tasks.named('test')
+    classDirectories.setFrom(coverageClasses)
+    violationRules {
+        rule {
+            limit {
+                counter = 'LINE'
+                minimum = 0.81
+            }
+            limit {
+                counter = 'BRANCH'
+                minimum = 0.72
+            }
+        }
+    }
+}
+
+tasks.named('test') { finalizedBy tasks.named('jacocoTestReport') }
+tasks.named('check') { dependsOn tasks.named('jacocoTestCoverageVerification') }
+
+tasks.register('bench', JavaExec) {
+    group = 'verification'
+    description = 'Times the runtime and compares against src/test/resources/baselines/bench.txt.'
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.eden.particles.bench.RuntimeBench'
+    jvmArgs '-Xms1g', '-Xmx1g'
+    systemProperty 'eden.baselines', file('src/test/resources/baselines').absolutePath
+    systemProperty 'eden.benchOut', layout.buildDirectory.file('bench/results.md').get().asFile.absolutePath
+    if (project.hasProperty('updateBaselines')) systemProperty 'eden.updateBaselines', 'true'
+    if (project.hasProperty('benchMaxRegression')) systemProperty 'eden.benchMaxRegression', project.property('benchMaxRegression')
 }
 
 configurations {

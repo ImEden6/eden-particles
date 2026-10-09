@@ -1,0 +1,4 @@
+# In-game client benchmarks, recorded by hand: /eden_particles_client bench <effect> <count> in a dev client.
+# Re-run after runtime or rendering changes and update this file in the same commit.
+examples/vortex x50	avg=0.132ms/tick fps~118
+examples/vortex x100	peak_live=14379 dropped=0 avg=0.466ms/tick

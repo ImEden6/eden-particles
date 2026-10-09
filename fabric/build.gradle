@@ -60,5 +60,14 @@ loom {
             ideConfigGenerated(true)
             runDir('runs/server')
         }
+        // scripts/smoke-server.sh
+        smokeServer {
+            server()
+            vmArg('-Deden_particles.smoke=true')
+            programArgs('--nogui')
+            setConfigName('Fabric Smoke Server')
+            ideConfigGenerated(false)
+            runDir('runs/smoke')
+        }
     }
 }
