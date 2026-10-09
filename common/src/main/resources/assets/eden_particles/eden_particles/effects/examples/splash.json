@@ -1,0 +1,21 @@
+{
+  "duration": 6,
+  "emitters": [
+    {
+      "name": "ring",
+      "duration": 1,
+      "template": {
+        "render": { "type": "sprite", "sprite": "eden_particles:glow" },
+        "lifetime": [6, 10],
+        "size": 0.08,
+        "alpha": [[0, 0.8], [1, 0]],
+        "color": "#BFE6FF",
+        "physics": { "gravity": 0.6 }
+      },
+      "shape": { "type": "ring", "radius": 0.05 },
+      "distribution": "even",
+      "spawn": { "bursts": [{ "at": 0, "count": 8 }] },
+      "velocity": { "type": "radial", "speed": 0.08 }
+    }
+  ]
+}

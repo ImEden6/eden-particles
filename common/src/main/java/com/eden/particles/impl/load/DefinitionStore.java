@@ -23,7 +23,7 @@ import java.util.function.Predicate;
 public final class DefinitionStore {
 
     /** In priority order, lowest first. */
-    public enum Layer { ASSETS, DATAPACK }
+    public enum Layer { ASSETS, CODE, DATAPACK }
 
     private final Map<Layer, ParsedDefinitions> layers = new EnumMap<>(Layer.class);
     private final List<Consumer<LoadReport>> listeners = new CopyOnWriteArrayList<>();

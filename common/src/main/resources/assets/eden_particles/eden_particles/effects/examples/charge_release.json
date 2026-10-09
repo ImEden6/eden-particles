@@ -1,0 +1,17 @@
+{
+  "duration": 60,
+  "inputs": { "power": 1 },
+  "emitters": [
+    {
+      "effect": "eden_particles:examples/charge",
+      "start": 0,
+      "duration": 40,
+      "inputs": { "power": "power" }
+    },
+    {
+      "effect": "eden_particles:examples/shockwave",
+      "start": 40,
+      "scale": "0.5 + power * 0.5"
+    }
+  ]
+}

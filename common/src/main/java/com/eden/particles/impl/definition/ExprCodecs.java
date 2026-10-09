@@ -3,10 +3,16 @@ package com.eden.particles.impl.definition;
 import com.eden.particles.impl.codec.Codecs;
 import com.eden.particles.impl.expr.Expr;
 import com.eden.particles.impl.expr.ExprParser;
+import com.eden.particles.impl.expr.InputNames;
+import com.mojang.datafixers.util.Pair;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.DataResult;
+import com.mojang.serialization.DynamicOps;
 
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * A number or an expression string over inputs. Range checks apply to plain numbers at load time; expressions are
@@ -24,6 +30,32 @@ public final class ExprCodecs {
                     ? DataResult.success(new ExprVec3(values.get(0), values.get(1), values.get(2)))
                     : DataResult.error(() -> "expected [x, y, z], got " + values.size() + " values"),
             v -> List.of(v.x(), v.y(), v.z()));
+
+    /** Input names to expressions, for passing inputs to another effect. */
+    public static final Codec<Map<String, Expr>> INPUT_MAP = new Codec<>() {
+        @Override
+        public <T> DataResult<Pair<Map<String, Expr>, T>> decode(DynamicOps<T> ops, T input) {
+            if (Codecs.kindOf(ops, input) != Codecs.Kind.MAP) {
+                return DataResult.error(() -> "expected an object of input names to numbers or expressions");
+            }
+            Map<String, Expr> inputs = new LinkedHashMap<>();
+            for (var entry : ops.getMap(input).getOrThrow().entries().toList()) {
+                String name = ops.getStringValue(entry.getFirst()).getOrThrow();
+                if (!InputNames.isValid(name) || name.equals(InputNames.DISTANCE)) {
+                    return DataResult.error(() -> "at " + name + ": not an input that can be set");
+                }
+                DataResult<Expr> value = NUMBER.parse(ops, entry.getSecond());
+                if (value.error().isPresent()) return DataResult.error(() -> "at " + name + ": " + value.error().get().message());
+                inputs.put(name, value.getOrThrow());
+            }
+            return DataResult.success(Pair.of(Collections.unmodifiableMap(inputs), ops.empty()));
+        }
+
+        @Override
+        public <T> DataResult<T> encode(Map<String, Expr> input, DynamicOps<T> ops, T prefix) {
+            return Codec.unboundedMap(Codec.STRING, NUMBER).encode(input, ops, prefix);
+        }
+    };
 
     private ExprCodecs() {
     }

@@ -2,7 +2,9 @@ package com.eden.particles.impl.client;
 
 import com.eden.particles.impl.definition.RenderMode;
 import com.eden.particles.impl.definition.SpriteRef;
+import com.eden.particles.impl.definition.Trigger;
 import com.eden.particles.impl.runtime.BakedTemplate;
+import com.eden.particles.impl.runtime.Triggers;
 import com.eden.particles.impl.runtime.TemplateValues;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.client.Camera;
@@ -26,6 +28,14 @@ public final class EdenParticle extends TextureSheetParticle {
     private final boolean emissive;
     private final ParticleRenderType renderType;
     private int frame;
+    private final int tint;
+    private final Trigger onDeath;
+    private final Trigger onLand;
+    private final float deathChance;
+    private final float landChance;
+    private final float[] deathInputs;
+    private final float[] landInputs;
+    private boolean landed;
 
     EdenParticle(ClientLevel level, double x, double y, double z, double vx, double vy, double vz,
                  BakedTemplate template, RenderMode.Sprite render, ResolvedSprite resolved,
@@ -37,6 +47,13 @@ public final class EdenParticle extends TextureSheetParticle {
         this.resolved = resolved;
         this.variant = variant;
         this.scale = scale;
+        this.tint = tint;
+        this.onDeath = template.onDeath().orElse(null);
+        this.onLand = template.onLand().orElse(null);
+        this.deathChance = values.deathChance;
+        this.landChance = values.landChance;
+        this.deathInputs = values.deathInputs;
+        this.landInputs = values.landInputs;
         this.sizeScale = values.size;
         this.alphaScale = values.alpha;
         this.speedScale = values.speed;
@@ -63,6 +80,7 @@ public final class EdenParticle extends TextureSheetParticle {
         yo = y;
         zo = z;
         if (age++ >= lifetime) {
+            if (onDeath != null) fire(onDeath, Triggers.DEATH_SALT, deathChance, deathInputs);
             remove();
             return;
         }
@@ -74,8 +92,18 @@ public final class EdenParticle extends TextureSheetParticle {
         yd *= friction;
         zd *= friction;
         if (onGround) {
+            if (onLand != null && !landed) {
+                landed = true;
+                fire(onLand, Triggers.LAND_SALT, landChance, landInputs);
+            }
             xd *= 0.7;
             zd *= 0.7;
+        }
+    }
+
+    private void fire(Trigger trigger, long salt, float chance, float[] inputs) {
+        if (Triggers.roll(variant, salt, chance)) {
+            ClientEffects.MANAGER.trigger(trigger, x, y, z, xd, yd, zd, scale, tint, inputs, Triggers.seed(variant, salt));
         }
     }
 

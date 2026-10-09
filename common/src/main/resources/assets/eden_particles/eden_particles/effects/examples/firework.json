@@ -1,0 +1,20 @@
+{
+  "duration": 30,
+  "emitters": [
+    {
+      "name": "rockets",
+      "duration": 1,
+      "template": {
+        "render": { "type": "sprite", "sprite": "eden_particles:glow", "blend": "additive", "emissive": true },
+        "lifetime": [18, 24],
+        "size": [[0, 0.16], [1, 0.1]],
+        "alpha": 0.9,
+        "color": "#FFE6A0",
+        "physics": { "gravity": 0.5, "drag": 0.98 },
+        "on_death": { "effect": "eden_particles:examples/firework_burst", "inputs": { "size": 1.2 } }
+      },
+      "spawn": { "bursts": [{ "at": 0, "count": 3 }] },
+      "velocity": { "type": "cone", "half_angle": 15, "speed": [0.6, 0.7] }
+    }
+  ]
+}

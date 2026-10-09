@@ -5,8 +5,11 @@ import com.eden.particles.impl.definition.Physics;
 import com.eden.particles.impl.definition.RandomInt;
 import com.eden.particles.impl.definition.RenderMode;
 import com.eden.particles.impl.definition.ScaledCurve;
+import com.eden.particles.impl.definition.Trigger;
 import com.eden.particles.impl.math.BakedGradient;
 import com.eden.particles.impl.math.Gradient;
+
+import java.util.Optional;
 
 /** A template with curves baked for per-tick sampling; defaults filled in. */
 public record BakedTemplate(
@@ -16,7 +19,9 @@ public record BakedTemplate(
         BakedScaledCurve alpha,
         BakedScaledCurve speed,
         BakedGradient color,
-        Physics physics) {
+        Physics physics,
+        Optional<Trigger> onDeath,
+        Optional<Trigger> onLand) {
 
     public static BakedTemplate bake(ParticleTemplate template) {
         return new BakedTemplate(
@@ -26,7 +31,9 @@ public record BakedTemplate(
                 BakedScaledCurve.bake(template.alpha().orElse(ScaledCurve.constant(1.0))),
                 BakedScaledCurve.bake(template.speed().orElse(ScaledCurve.constant(1.0))),
                 template.color().orElse(Gradient.constant(0xFFFFFF)).bake(),
-                template.physics());
+                template.physics(),
+                template.onDeath(),
+                template.onLand());
     }
 
     public void evaluate(float[] inputs, TemplateValues out) {
@@ -35,5 +42,13 @@ public record BakedTemplate(
         out.speed = speed.scale(inputs);
         out.gravity = physics.gravity().eval(inputs);
         out.drag = Physics.clampDrag(physics.drag().eval(inputs));
+        onDeath.ifPresent(t -> {
+            out.deathChance = t.chance().eval(inputs);
+            out.deathInputs = TemplateValues.evaluate(t, inputs);
+        });
+        onLand.ifPresent(t -> {
+            out.landChance = t.chance().eval(inputs);
+            out.landInputs = TemplateValues.evaluate(t, inputs);
+        });
     }
 }

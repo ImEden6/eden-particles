@@ -127,7 +127,63 @@ Not in timeline values (`duration`, `start`, burst `at`) or colours; use the cod
 
 Code can change inputs while an effect plays. Emitter values follow the change on the next tick. Template values are worked out when each particle spawns, so particles already alive keep theirs.
 
+## Effects that play effects
+
+An effect can play other effects in two ways: a **sub-effect** on the timeline, and a **trigger** on a template that fires when its particles die or land.
+
+### Sub-effects
+
+An entry in `emitters` with `"effect"` instead of `"template"` plays another effect as part of this one:
+
+```json
+{ "effect": "eden_particles:flash", "start": 10, "duration": 20, "offset": [0, 1, 0], "rotation": [0, 90, 0],
+  "scale": "power", "inputs": { "power": "power * 2" } }
+```
+
+- `effect` is the effect to play. Required.
+- `start` is the tick it starts on. Default `0`.
+- `duration` is how long it runs. Default is the rest of the parent's timeline.
+- `offset` moves it, in the parent's frame.
+- `rotation` is yaw, pitch and roll in degrees, added to the parent's.
+- `scale` is an expression that multiplies its size.
+- `inputs` sets the child's inputs. Each value is an expression over the parent's inputs, re-evaluated every tick, so live changes reach the child.
+
+The child follows the parent's anchor and inherits its facing, tint and `distance`. A looping parent plays it again on every loop. When the child's window ends, it stops spawning and its particles finish their lives.
+
+See `eden_particles:examples/charge_release` for a timeline with two sub-effects.
+
+### On death and on landing
+
+A template can play an effect when its particles die or land:
+
+```json
+"on_death": { "effect": "eden_particles:pop", "chance": 0.5, "aim": "velocity", "inputs": { "size": "power" } }
+```
+
+- `effect` is the effect to play. Required.
+- `chance` is the odds, from 0 to 1, as an expression. Default `1`.
+- `aim` is `none` (world axes, the default) or `velocity`, which turns the played effect's +Z along the particle's velocity at that moment.
+- `inputs` sets the played effect's inputs, as expressions.
+
+`chance` and `inputs` are read from the spawning effect's inputs when the particle spawns. The played effect starts at the particle's position, with its scale and tint.
+
+Triggers work on sprite templates only. `on_land` also needs `"physics": {"collide": true}`, and it fires once, the first time a particle touches a block.
+
+Whether a particle's trigger fires is decided the same way for every player, so they see the same pops. At most 64 triggered effects start per tick; past that, extra ones are skipped.
+
+See `eden_particles:examples/firework` (a rocket that bursts on death) and `eden_particles:examples/rain` (drops that splash on landing).
+
+### Load-time checks
+
+- The effect you play must exist.
+- The inputs you pass must be declared by the effect you play.
+- An effect can't play itself, directly or through a chain of sub-effects and triggers. The error names the loop.
+
+If the played effect fails to load, the effect that plays it fails too, and the error points to the child's error.
+
 ## Emitter
+
+An entry with `"effect"` instead of `"template"` is a sub-effect. See [Effects that play effects](#effects-that-play-effects).
 
 | Field | Default | |
 |---|---|---|
@@ -210,6 +266,8 @@ Curves on a template run over the particle's own life, from `t = 0` (spawn) to `
 | `physics.gravity` | `0` | `1` is vanilla's normal pull. Negative values float upward. |
 | `physics.drag` | `0.98` | Speed kept each tick (vanilla's friction). `0.9` stops quickly, `1` never slows down. |
 | `physics.collide` | `false` | Bounces off blocks. Costs more, so leave it off unless you need it. |
+| `on_death` | none | Plays an effect when a particle dies. Sprite templates only. See [On death and on landing](#on-death-and-on-landing). |
+| `on_land` | none | Plays an effect the first time a particle touches a block. Sprite templates only, and needs `physics.collide`. See [On death and on landing](#on-death-and-on-landing). |
 
 **Render types:**
 - `{"type": "sprite", "sprite": …, "blend": "translucent" | "additive", "emissive": bool}` is Eden's own particle and follows every curve. See [Sprites](#sprites) for animated forms. `additive` adds light: overlapping particles brighten, which suits glows, sparks and magic. `emissive` makes the particle full-bright at night.

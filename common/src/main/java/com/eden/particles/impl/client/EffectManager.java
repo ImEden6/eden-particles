@@ -1,7 +1,9 @@
 package com.eden.particles.impl.client;
 
 import com.eden.particles.Constants;
+import com.eden.particles.impl.definition.Trigger;
 import com.eden.particles.impl.load.DefinitionStore;
+import com.eden.particles.impl.math.Rotations;
 import com.eden.particles.impl.runtime.Anchor;
 import com.eden.particles.impl.runtime.BakedEffect;
 import com.eden.particles.impl.runtime.EffectInstance;
@@ -11,10 +13,10 @@ import net.minecraft.client.ParticleStatus;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.phys.Vec3;
+import org.joml.Quaternionf;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -24,6 +26,8 @@ public final class EffectManager {
 
     static final int MAX_ACTIVE = 512;
     static final int SPAWN_BUDGET_PER_TICK = 2000;
+    /** Effects that particles may start per tick when they die or land. */
+    static final int MAX_TRIGGERED_PER_TICK = 64;
     /** Vanilla keeps 1/10 × 2/3 of {@code decreased}-flagged particles on Minimal. */
     private static final float IMPORTANT_ON_MINIMAL = 1f / 15f;
 
@@ -33,6 +37,7 @@ public final class EffectManager {
     private Map<ResourceLocation, BakedEffect> baked = Map.of();
     private ClientLevel level;
     private int attemptsLastTick;
+    private int triggeredThisTick;
     private boolean warnedFull;
     Bench bench;
 
@@ -51,8 +56,21 @@ public final class EffectManager {
             return Optional.empty();
         }
         EffectInstance instance = new EffectInstance(effect, anchor, params);
+        instance.setHost((child, childAnchor, childParams) -> play(child, childAnchor, childParams).orElse(null));
         active.add(instance);
         return Optional.of(instance);
+    }
+
+    /** Plays a particle's {@code on_death} or {@code on_land} effect where it is. */
+    void trigger(Trigger trigger, double x, double y, double z, double vx, double vy, double vz,
+                 float scale, int tint, float[] inputs, long seed) {
+        if (triggeredThisTick >= MAX_TRIGGERED_PER_TICK) return;
+        Quaternionf facing = trigger.aim() == Trigger.Aim.VELOCITY ? Rotations.lookAt(vx, vy, vz, new Quaternionf()) : new Quaternionf();
+        play(trigger.effect(), Anchor.fixed(x, y, z), new PlayParams(scale, facing, tint, seed)).ifPresent(instance -> {
+            triggeredThisTick++;
+            int i = 0;
+            for (String name : trigger.inputs().keySet()) instance.setInput(name, inputs[i++]);
+        });
     }
 
     ClientImages images() {
@@ -79,6 +97,7 @@ public final class EffectManager {
         if (level == null || minecraft.isPaused()) return;
         Demo.tick(minecraft, this);
         long start = System.nanoTime();
+        triggeredThisTick = 0;
         sink.beginTick();
         attemptsLastTick = active.isEmpty() ? 0 : tickActive(minecraft);
         int dropped = sink.drainDropped();
@@ -101,16 +120,14 @@ public final class EffectManager {
         Vec3 camera = minecraft.gameRenderer.getMainCamera().getPosition();
 
         int attempts = 0;
-        for (Iterator<EffectInstance> it = active.iterator(); it.hasNext(); ) {
-            EffectInstance instance = it.next();
-            if (!instance.prepare()) {
-                it.remove();
-                continue;
-            }
+        // By index: sub-effects started during this loop are appended and run this same tick, after their parent.
+        for (int i = 0; i < active.size(); i++) {
+            EffectInstance instance = active.get(i);
+            if (!instance.prepare()) continue;
             float fade = distanceFade(instance, camera);
             attempts += instance.tick(sink, quality * fade * budget, importantQuality * fade * budget);
-            if (instance.isFinished()) it.remove();
         }
+        active.removeIf(EffectInstance::isFinished);
         return attempts;
     }
 

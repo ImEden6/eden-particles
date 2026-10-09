@@ -97,6 +97,18 @@ EdenParticles.onReload(() -> rebuildMyCache());
 
 Both are client-only and do nothing on a dedicated server.
 
+## Effects from code
+
+Mods can register templates and effects from JSON in code instead of a resource pack. The definitions are parsed and linked like pack files. They override a pack file with the same id, and a server datapack still overrides them. They survive resource reloads. Each call relinks every effect, so register in batches at startup rather than every tick. Registrations are client-only and do nothing on a dedicated server.
+
+```java
+List<String> templateErrors = EdenParticles.registerTemplate(id("dot"), JsonParser.parseString(dotJson));
+List<String> effectErrors = EdenParticles.registerEffect(id("burst"), JsonParser.parseString(burstJson));
+if (!effectErrors.isEmpty()) LOG.warn("Bad effect: {}", effectErrors);
+```
+
+The returned list holds the errors for the id that was registered. It is empty when that definition loaded. `EdenParticles.unregister(id)` removes it again.
+
 ## Commands
 
 | Command | Side | |

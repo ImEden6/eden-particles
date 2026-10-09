@@ -11,13 +11,16 @@ import com.eden.particles.impl.math.Rotations;
 import com.eden.particles.impl.net.EffectState;
 import com.eden.particles.impl.net.PlayEffectPayload;
 import com.eden.particles.impl.net.UpdateEffectPayload;
+import com.eden.particles.impl.load.CodeDefinitions;
 import com.eden.particles.impl.load.DefinitionError;
 import com.eden.particles.impl.load.DefinitionStore;
+import com.eden.particles.impl.load.LoadReport;
 import com.eden.particles.impl.load.ParsedDefinitions;
 import com.eden.particles.impl.load.RawDefinition;
 import com.eden.particles.impl.net.ImagePayloads;
 import com.eden.particles.impl.net.StopEffectPayload;
 import com.eden.particles.impl.net.SyncDefinitionsPayload;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonParseException;
 import com.google.gson.JsonParser;
 import com.eden.particles.impl.runtime.Anchor;
@@ -44,6 +47,7 @@ final class ClientHooksImpl implements ClientHooks {
     private final Set<ResourceLocation> warnedUnknown = new HashSet<>();
     private final Set<String> warnedInputs = new HashSet<>();
     private final List<SyncDefinitionsPayload.Entry> incoming = new ArrayList<>();
+    private final CodeDefinitions code = new CodeDefinitions();
     private List<SyncDefinitionsPayload.Entry> applied = List.of();
 
     ClientHooksImpl(EffectManager manager) {
@@ -69,6 +73,25 @@ final class ClientHooksImpl implements ClientHooks {
     @Override
     public void onReload(Runnable listener) {
         ClientEffects.STORE.onReload(report -> listener.run());
+    }
+
+    @Override
+    public List<String> registerEffect(ResourceLocation id, JsonElement json) {
+        code.putEffect(id, json.deepCopy());
+        return relinkCode(id);
+    }
+
+    @Override
+    public List<String> registerTemplate(ResourceLocation id, JsonElement json) {
+        code.putTemplate(id, json.deepCopy());
+        return relinkCode(id);
+    }
+
+    @Override
+    public boolean unregister(ResourceLocation id) {
+        if (!code.remove(id)) return false;
+        ClientEffects.report(ClientEffects.STORE.replace(DefinitionStore.Layer.CODE, code.parse()));
+        return true;
     }
 
     @Override
@@ -131,6 +154,12 @@ final class ClientHooksImpl implements ClientHooks {
             applied = List.of();
             ClientEffects.STORE.replace(DefinitionStore.Layer.DATAPACK, ParsedDefinitions.EMPTY);
         }
+    }
+
+    private List<String> relinkCode(ResourceLocation id) {
+        LoadReport report = ClientEffects.STORE.replace(DefinitionStore.Layer.CODE, code.parse());
+        ClientEffects.report(report);
+        return CodeDefinitions.errorsFor(report, id);
     }
 
     private static ParsedDefinitions parse(List<SyncDefinitionsPayload.Entry> entries) {

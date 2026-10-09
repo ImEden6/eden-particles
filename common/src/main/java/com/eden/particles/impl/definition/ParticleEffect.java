@@ -8,6 +8,7 @@ import com.mojang.serialization.Codec;
 import com.mojang.serialization.DataResult;
 import com.mojang.serialization.DynamicOps;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -16,10 +17,11 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * A choreographed effect: emitters on a timeline of {@code duration} ticks. {@code range} is the send distance in
- * blocks; {@code inputs} are the named numbers code can pass in, with their defaults.
+ * A choreographed effect: emitters and sub-effects on a timeline of {@code duration} ticks. {@code range} is the send
+ * distance in blocks; {@code inputs} are the named numbers code can pass in, with their defaults. {@code tracks} keeps
+ * the JSON order, so its indices match {@code emitters[i]} in error messages.
  */
-public record ParticleEffect(int duration, boolean loop, float range, Map<String, Float> inputs, List<EmitterTrack> emitters) {
+public record ParticleEffect(int duration, boolean loop, float range, Map<String, Float> inputs, List<Track> tracks) {
 
     public static final float DEFAULT_RANGE = 64f;
 
@@ -52,12 +54,36 @@ public record ParticleEffect(int duration, boolean loop, float range, Map<String
         }
     };
 
+    private static final Codec<Track> TRACK = new Codec<>() {
+        @Override
+        public <T> DataResult<Pair<Track, T>> decode(DynamicOps<T> ops, T input) {
+            boolean sub = ops.getMap(input).result().map(m -> m.get("effect") != null).orElse(false);
+            return sub
+                    ? SubEffect.CODEC.decode(ops, input).map(p -> p.mapFirst(Track.class::cast))
+                    : EmitterTrack.CODEC.decode(ops, input).map(p -> p.mapFirst(Track.class::cast));
+        }
+
+        @Override
+        public <T> DataResult<T> encode(Track input, DynamicOps<T> ops, T prefix) {
+            return switch (input) {
+                case EmitterTrack e -> EmitterTrack.CODEC.encode(e, ops, prefix);
+                case SubEffect s -> SubEffect.CODEC.encode(s, ops, prefix);
+            };
+        }
+    };
+
     public static final Codec<ParticleEffect> CODEC = ObjectCodec.of("effect", f -> {
         int duration = f.required("duration", Codecs.intAtLeast(1));
-        List<EmitterTrack> emitters = f.required("emitters", Codecs.nonEmptyList(EmitterTrack.CODEC));
+        List<Track> emitters = new ArrayList<>(f.required("emitters", Codecs.nonEmptyList(TRACK)));
         Set<String> names = new HashSet<>();
         for (int i = 0; i < emitters.size(); i++) {
-            EmitterTrack track = emitters.get(i);
+            if (emitters.get(i) instanceof SubEffect sub && sub.duration() == SubEffect.REST) {
+                if (sub.start() >= duration) {
+                    throw f.failAt("emitters", "at [" + i + "]: starts at tick " + sub.start() + ", past the effect's duration of " + duration);
+                }
+                emitters.set(i, sub.withDuration(duration - sub.start()));
+            }
+            Track track = emitters.get(i);
             if (track.end() > duration) {
                 throw f.failAt("emitters", "at [" + i + "]: runs from tick " + track.start() + " to " + track.end()
                         + ", past the effect's duration of " + duration);
@@ -70,11 +96,20 @@ public record ParticleEffect(int duration, boolean loop, float range, Map<String
                 f.optional("loop", Codecs.BOOL, false),
                 f.optional("range", Codecs.floatAtLeast(1f), DEFAULT_RANGE),
                 f.optional("inputs", INPUTS, Map.of()),
-                emitters);
+                List.copyOf(emitters));
     }, (e, out) -> out
             .put("duration", Codecs.INT, e.duration)
             .put("loop", Codecs.BOOL, e.loop)
             .put("range", Codecs.FLOAT, e.range)
             .put("inputs", INPUTS, e.inputs)
-            .put("emitters", Codecs.list(EmitterTrack.CODEC), e.emitters));
+            .put("emitters", Codecs.list(TRACK), e.tracks));
+
+    /** The particle emitters, in order. */
+    public List<EmitterTrack> emitters() {
+        return tracks.stream().filter(EmitterTrack.class::isInstance).map(EmitterTrack.class::cast).toList();
+    }
+
+    public List<SubEffect> subEffects() {
+        return tracks.stream().filter(SubEffect.class::isInstance).map(SubEffect.class::cast).toList();
+    }
 }

@@ -6,7 +6,9 @@ import net.minecraft.resources.ResourceLocation;
 import org.joml.Quaternionf;
 import org.junit.jupiter.api.Test;
 
+import java.util.ArrayList;
 import java.util.IdentityHashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.TreeMap;
@@ -35,19 +37,33 @@ class EffectSnapshotTest {
 
     private static void record(Map<String, String> out, String prefix, Map<ResourceLocation, BakedEffect> effects) {
         effects.forEach((id, effect) -> {
-            out.put(prefix + id + " plain", fingerprint(effect, PLAIN, 1f));
-            out.put(prefix + id + " half", fingerprint(effect, PLAIN, 0.5f));
-            out.put(prefix + id + " transformed", fingerprint(effect, TRANSFORMED, 1f));
+            out.put(prefix + id + " plain", fingerprint(effects, effect, PLAIN, 1f));
+            out.put(prefix + id + " half", fingerprint(effects, effect, PLAIN, 0.5f));
+            out.put(prefix + id + " transformed", fingerprint(effects, effect, TRANSFORMED, 1f));
         });
     }
 
-    private static String fingerprint(BakedEffect effect, PlayParams params, float keep) {
+    /** Sub-effects play too, ticked after their parent like the client does; particle triggers need a game. */
+    private static String fingerprint(Map<ResourceLocation, BakedEffect> effects, BakedEffect effect, PlayParams params, float keep) {
         Fingerprint print = new Fingerprint();
-        EffectInstance instance = new EffectInstance(effect, Anchor.fixed(0.5, 64, 0.5), params);
+        List<EffectInstance> active = new ArrayList<>();
+        EffectHost host = (id, anchor, childParams) -> {
+            EffectInstance child = new EffectInstance(effects.get(id), anchor, childParams);
+            active.add(child);
+            return child;
+        };
+        EffectInstance root = new EffectInstance(effect, Anchor.fixed(0.5, 64, 0.5), params);
+        root.setHost(host);
+        active.add(root);
         int ticks = 0;
         int attempts = 0;
-        while (ticks < MAX_TICKS && instance.prepare()) {
-            attempts += instance.tick(print, keep, keep);
+        while (ticks < MAX_TICKS && !active.isEmpty()) {
+            for (int i = 0; i < active.size(); i++) {
+                EffectInstance instance = active.get(i);
+                instance.setHost(host);
+                if (instance.prepare()) attempts += instance.tick(print, keep, keep);
+            }
+            active.removeIf(EffectInstance::isFinished);
             ticks++;
         }
         return String.format(Locale.ROOT, "ticks=%d attempts=%d %s", ticks, attempts, print);

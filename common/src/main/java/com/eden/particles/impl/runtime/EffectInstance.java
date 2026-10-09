@@ -3,6 +3,7 @@ package com.eden.particles.impl.runtime;
 import com.eden.particles.impl.definition.EmitterShape;
 import com.eden.particles.impl.definition.EmitterTrack;
 import com.eden.particles.impl.definition.SpawnSpec;
+import com.eden.particles.impl.definition.SubEffect;
 import com.eden.particles.impl.definition.Speed;
 import com.eden.particles.impl.definition.VelocityMode;
 import com.eden.particles.impl.expr.Expr;
@@ -30,10 +31,15 @@ public final class EffectInstance {
 
     private static final long BURST_SALT = 0x5851F42D4C957F2DL;
     private static final long JITTER_SALT = 0x14057B7EF767814FL;
+    private static final long SUB_EFFECT_SALT = 0x94D049BB133111EBL;
     private static final float TWO_PI = (float) (2.0 * Math.PI);
 
     private final BakedEffect effect;
     private final Anchor anchor;
+    private final long seed;
+    private final EffectInstance[] children;
+    private final int[] startedLoop;
+    private EffectHost host;
     private final long[] emitterSeeds;
     private final EmitterState[] states;
     private final float[] inputs;
@@ -64,6 +70,10 @@ public final class EffectInstance {
         this.scale = params.scale();
         this.rotation.set(params.rotation());
         this.tint = params.tint();
+        this.seed = params.seed();
+        this.children = new EffectInstance[effect.subEffects().size()];
+        this.startedLoop = new int[children.length];
+        Arrays.fill(startedLoop, -1);
         int count = effect.emitters().size();
         this.emitterSeeds = new long[count];
         this.states = new EmitterState[count];
@@ -77,7 +87,7 @@ public final class EffectInstance {
     public boolean prepare() {
         if (finished) return false;
         if (!anchor.resolve(placement)) {
-            finished = true;
+            stop();
             return false;
         }
         current.set(placement.position);
@@ -102,8 +112,62 @@ public final class EffectInstance {
         return finished;
     }
 
+    /** Ends spawning, and the sub-effects this effect started. */
     public void stop() {
         finished = true;
+        stopChildren();
+    }
+
+    /** Where sub-effects start; without one they're skipped. */
+    public void setHost(EffectHost host) {
+        this.host = host;
+    }
+
+    private void stopChildren() {
+        for (int s = 0; s < children.length; s++) {
+            if (children[s] != null) children[s].stop();
+            children[s] = null;
+        }
+    }
+
+    /** Starts sub-effects whose window has come, keeps live ones in step with this effect, and ends those past it. */
+    private void tickSubEffects() {
+        for (BakedSubEffect sub : effect.subEffects()) {
+            int s = sub.index();
+            SubEffect definition = sub.definition();
+            boolean inWindow = age >= definition.start() && age < definition.end();
+            EffectInstance child = children[s];
+            if (child != null && (!inWindow || child.isFinished())) {
+                child.stop();
+                children[s] = child = null;
+            }
+            if (child == null && inWindow && host != null && startedLoop[s] != loops) {
+                startedLoop[s] = loops;
+                PlayParams params = new PlayParams(scale * definition.scale().eval(inputs), new Quaternionf(), tint,
+                        Rng.derive(seed ^ SUB_EFFECT_SALT, (long) loops * children.length + s));
+                child = host.start(definition.effect(), childAnchor(sub), params);
+                if (child != null) child.fastForward(age - definition.start());
+                children[s] = child;
+            }
+            if (child != null) {
+                child.setScale(scale * definition.scale().eval(inputs));
+                child.setTint(tint);
+                for (int i = 0; i < sub.inputNames().length; i++) child.setInput(sub.inputNames()[i], sub.inputValues()[i].eval(inputs));
+            }
+        }
+    }
+
+    /** Follows this effect's anchor and facing, offset in its frame. */
+    private Anchor childAnchor(BakedSubEffect sub) {
+        Vector3f childOffset = new Vector3f();
+        return out -> {
+            if (finished) return false;
+            base.transform(sub.definition().offset().eval(inputs, childOffset)).mul(scale);
+            out.position.set(current).add(childOffset.x, childOffset.y, childOffset.z);
+            out.facing.set(base).mul(sub.rotation());
+            out.distance = inputs[InputNames.DISTANCE_ID];
+            return true;
+        };
     }
 
     /** @return false if the effect doesn't declare this input */
@@ -150,6 +214,7 @@ public final class EffectInstance {
      */
     public int tick(SpawnSink sink, float keep, float keepImportant) {
         int attempts = 0;
+        if (children.length > 0) tickSubEffects();
         for (BakedEmitter emitter : effect.emitters()) {
             EmitterTrack track = emitter.track();
             if (age < track.start() || age >= track.end()) continue;
@@ -191,6 +256,7 @@ public final class EffectInstance {
         previous.set(current);
         age++;
         if (age >= effect.duration()) {
+            stopChildren();
             if (effect.definition().loop()) {
                 age = 0;
                 loops++;

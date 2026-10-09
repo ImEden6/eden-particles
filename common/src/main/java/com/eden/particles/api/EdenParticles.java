@@ -2,6 +2,7 @@ package com.eden.particles.api;
 
 import com.eden.particles.impl.ServerEffects;
 import com.eden.particles.impl.Sides;
+import com.google.gson.JsonElement;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -44,5 +45,23 @@ public final class EdenParticles {
     /** Client only: runs after every resource reload that reloads effects. Ignored on a dedicated server. */
     public static void onReload(Runnable listener) {
         Sides.client().ifPresent(client -> client.onReload(listener));
+    }
+
+    /**
+     * Client only: registers an effect from code, parsed like a resource-pack file and overriding one with the same id.
+     * Every call relinks all effects, so register in batches. Returns this id's errors, empty if it loaded.
+     */
+    public static List<String> registerEffect(ResourceLocation id, JsonElement json) {
+        return Sides.client().map(client -> client.registerEffect(id, json)).orElse(List.of());
+    }
+
+    /** Client only: like {@link #registerEffect}, for a template that effects reference by id. */
+    public static List<String> registerTemplate(ResourceLocation id, JsonElement json) {
+        return Sides.client().map(client -> client.registerTemplate(id, json)).orElse(List.of());
+    }
+
+    /** Client only: removes an effect or template registered from code. Returns whether anything was removed. */
+    public static boolean unregister(ResourceLocation id) {
+        return Sides.client().map(client -> client.unregister(id)).orElse(false);
     }
 }

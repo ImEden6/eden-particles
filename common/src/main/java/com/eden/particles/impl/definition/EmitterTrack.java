@@ -27,7 +27,7 @@ public record EmitterTrack(
         Distribution distribution,
         SpawnSpec spawn,
         VelocityMode velocity,
-        boolean important) {
+        boolean important) implements Track {
 
     /** {@code even} lays bursts out on a Fibonacci sphere, sunflower disc or evenly spaced ring. */
     public enum Distribution { RANDOM, EVEN }
@@ -93,6 +93,7 @@ public record EmitterTrack(
             .put("important", Codecs.BOOL, t.important));
 
     /** Input names used by this emitter, not counting its template. */
+    @Override
     public void names(Set<String> out) {
         offset.names(out);
         spin.ifPresent(s -> s.names(out));
@@ -101,7 +102,5 @@ public record EmitterTrack(
         velocity.names(out);
     }
 
-    public int end() {
-        return start + duration;
-    }
+
 }

@@ -1,0 +1,22 @@
+{
+  "duration": 20,
+  "inputs": { "size": 1 },
+  "emitters": [
+    {
+      "name": "burst",
+      "duration": 1,
+      "template": {
+        "render": { "type": "sprite", "sprite": "eden_particles:glow", "blend": "additive", "emissive": true },
+        "lifetime": [14, 20],
+        "size": { "keys": [[0, 0.3], [0.3, 0.22], [1, 0]], "scale": "size" },
+        "alpha": [[0, 0.5], [1, 0]],
+        "color": [{ "t": 0, "color": "#FFD27A" }, { "t": 1, "color": "#FF4A1A" }],
+        "physics": { "gravity": 0.3, "drag": 0.9 }
+      },
+      "shape": { "type": "sphere", "radius": 0.1, "surface": true },
+      "distribution": "even",
+      "spawn": { "bursts": [{ "at": 0, "count": 40 }] },
+      "velocity": { "type": "radial", "speed": [0.15, 0.25] }
+    }
+  ]
+}

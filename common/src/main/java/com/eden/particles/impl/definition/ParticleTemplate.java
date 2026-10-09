@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Stream;
 
 /** What a particle looks like and how it moves over its life. Curves sample particle age, {@code t ∈ [0,1]}. */
 public record ParticleTemplate(
@@ -18,7 +19,9 @@ public record ParticleTemplate(
         Optional<ScaledCurve> alpha,
         Optional<Gradient> color,
         Optional<ScaledCurve> speed,
-        Physics physics) {
+        Physics physics,
+        Optional<Trigger> onDeath,
+        Optional<Trigger> onLand) {
 
     public static final float DEFAULT_SIZE = 0.1f;
 
@@ -28,6 +31,13 @@ public record ParticleTemplate(
         alpha.ifPresent(c -> c.names(out));
         speed.ifPresent(c -> c.names(out));
         physics.names(out);
+        onDeath.ifPresent(t -> t.names(out));
+        onLand.ifPresent(t -> t.names(out));
+    }
+
+    /** Effects this template plays when its particles die or land. */
+    public Stream<Trigger> triggers() {
+        return Stream.concat(onDeath.stream(), onLand.stream());
     }
 
     public static final Codec<ParticleTemplate> CODEC = ObjectCodec.of("template", f -> {
@@ -39,15 +49,22 @@ public record ParticleTemplate(
                 f.optional("alpha", CurveCodecs.SCALED),
                 f.optional("color", CurveCodecs.GRADIENT),
                 f.optional("speed", CurveCodecs.SCALED),
-                f.optional("physics", Physics.CODEC, Physics.DEFAULT));
+                f.optional("physics", Physics.CODEC, Physics.DEFAULT),
+                f.optional("on_death", Trigger.CODEC),
+                f.optional("on_land", Trigger.CODEC));
+        if (template.onLand.isPresent() && !template.physics.collide()) {
+            throw f.failAt("on_land", "needs \"physics\": {\"collide\": true}, or particles never land");
+        }
         if (render instanceof RenderMode.Vanilla) {
             List<String> curves = new ArrayList<>();
             template.size.ifPresent(c -> curves.add("size"));
             template.alpha.ifPresent(c -> curves.add("alpha"));
             template.color.ifPresent(c -> curves.add("color"));
             template.speed.ifPresent(c -> curves.add("speed"));
+            template.onDeath.ifPresent(c -> curves.add("on_death"));
+            template.onLand.ifPresent(c -> curves.add("on_land"));
             if (!curves.isEmpty()) {
-                throw f.fail("vanilla particles can't follow per-particle curves; remove " + curves + " or use render type 'sprite'");
+                throw f.fail("vanilla particles can't follow per-particle curves or triggers; remove " + curves + " or use render type 'sprite'");
             }
         }
         return template;
@@ -58,5 +75,7 @@ public record ParticleTemplate(
             .put("alpha", CurveCodecs.SCALED, t.alpha)
             .put("color", CurveCodecs.GRADIENT, t.color)
             .put("speed", CurveCodecs.SCALED, t.speed)
-            .put("physics", Physics.CODEC, t.physics));
+            .put("physics", Physics.CODEC, t.physics)
+            .put("on_death", Trigger.CODEC, t.onDeath)
+            .put("on_land", Trigger.CODEC, t.onLand));
 }

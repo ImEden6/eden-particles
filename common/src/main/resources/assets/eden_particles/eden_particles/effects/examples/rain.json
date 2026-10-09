@@ -1,0 +1,22 @@
+{
+  "duration": 40,
+  "loop": true,
+  "emitters": [
+    {
+      "name": "drops",
+      "duration": 40,
+      "template": {
+        "render": { "type": "sprite", "sprite": "eden_particles:glow" },
+        "lifetime": 60,
+        "size": 0.06,
+        "color": "#BFE6FF",
+        "physics": { "gravity": 1, "drag": 0.98, "collide": true },
+        "on_land": { "effect": "eden_particles:examples/splash", "chance": 0.7 }
+      },
+      "shape": { "type": "disc", "radius": 3 },
+      "offset": [0, 6, 0],
+      "spawn": { "rate": 3 },
+      "velocity": { "type": "fixed", "direction": [0, -1, 0], "speed": 0.5 }
+    }
+  ]
+}

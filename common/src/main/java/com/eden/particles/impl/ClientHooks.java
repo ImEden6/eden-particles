@@ -8,7 +8,10 @@ import com.eden.particles.impl.net.PlayEffectPayload;
 import com.eden.particles.impl.net.StopEffectPayload;
 import com.eden.particles.impl.net.SyncDefinitionsPayload;
 import com.eden.particles.impl.net.UpdateEffectPayload;
+import com.google.gson.JsonElement;
 import net.minecraft.resources.ResourceLocation;
+
+import java.util.List;
 
 /** Client functionality reached from side-agnostic code; implemented in {@code impl.client}. */
 public interface ClientHooks {
@@ -18,6 +21,12 @@ public interface ClientHooks {
     boolean isLoaded(ResourceLocation effect);
 
     void onReload(Runnable listener);
+
+    List<String> registerEffect(ResourceLocation id, JsonElement json);
+
+    List<String> registerTemplate(ResourceLocation id, JsonElement json);
+
+    boolean unregister(ResourceLocation id);
 
     void handle(PlayEffectPayload payload);
 
