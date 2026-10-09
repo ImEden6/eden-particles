@@ -65,7 +65,7 @@ class EffectSnapshotTest {
 
         @Override
         public void spawn(BakedTemplate template, double x, double y, double z, double vx, double vy, double vz,
-                          int lifetime, float scale, int tint, float variant) {
+                          int lifetime, float scale, int tint, float variant, TemplateValues values) {
             mix(templates.computeIfAbsent(template, t -> templates.size()));
             for (double v : new double[]{x, y, z, vx, vy, vz, scale, variant}) mix(Math.round(v * 1e4));
             mix(lifetime);

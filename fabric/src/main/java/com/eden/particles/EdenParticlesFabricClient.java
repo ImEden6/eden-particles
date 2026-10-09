@@ -7,6 +7,7 @@ import com.eden.particles.impl.net.ImagePayloads;
 import com.eden.particles.impl.net.PlayEffectPayload;
 import com.eden.particles.impl.net.StopEffectPayload;
 import com.eden.particles.impl.net.SyncDefinitionsPayload;
+import com.eden.particles.impl.net.UpdateEffectPayload;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
@@ -25,6 +26,7 @@ public class EdenParticlesFabricClient implements ClientModInitializer {
         ClientTickEvents.END_CLIENT_TICK.register(client -> ClientEffects.tick());
         ClientPlayNetworking.registerGlobalReceiver(PlayEffectPayload.TYPE, (payload, context) -> ClientEffects.HOOKS.handle(payload));
         ClientPlayNetworking.registerGlobalReceiver(StopEffectPayload.TYPE, (payload, context) -> ClientEffects.HOOKS.handle(payload));
+        ClientPlayNetworking.registerGlobalReceiver(UpdateEffectPayload.TYPE, (payload, context) -> ClientEffects.HOOKS.handle(payload));
         ClientPlayNetworking.registerGlobalReceiver(SyncDefinitionsPayload.TYPE, (payload, context) -> ClientEffects.HOOKS.handle(payload));
         ClientPlayNetworking.registerGlobalReceiver(ImagePayloads.Offer.TYPE, (payload, context) -> ClientEffects.HOOKS.handle(payload));
         ClientPlayNetworking.registerGlobalReceiver(ImagePayloads.Images.TYPE, (payload, context) -> ClientEffects.HOOKS.handle(payload));

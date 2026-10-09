@@ -3,9 +3,15 @@
 eden_particles:examples/arcane_burst half	ticks=60 attempts=295 spawns=151 templates=3 hash=8e466f481032eb84 box=[-1.34 64.10 -1.46 | 2.46 65.19 2.10] speed=0.1111 life=18.32
 eden_particles:examples/arcane_burst plain	ticks=60 attempts=295 spawns=295 templates=3 hash=007d07aefd88ddaf box=[-1.38 64.10 -1.46 | 2.46 65.20 2.44] speed=0.1040 life=18.62
 eden_particles:examples/arcane_burst transformed	ticks=60 attempts=291 spawns=291 templates=3 hash=95f8de9d7c6c6528 box=[-2.42 63.61 -2.43 | 3.39 65.77 3.42] speed=0.1556 life=18.63
+eden_particles:examples/beam half	ticks=400 attempts=600 spawns=304 templates=1 hash=df20687a26474819 box=[0.35 63.85 0.50 | 0.65 64.15 0.50] speed=0.0000 life=12.90
+eden_particles:examples/beam plain	ticks=400 attempts=600 spawns=600 templates=1 hash=c33a5e37953df71f box=[0.35 63.85 0.50 | 0.65 64.15 0.50] speed=0.0000 life=12.97
+eden_particles:examples/beam transformed	ticks=400 attempts=600 spawns=600 templates=1 hash=fe99c7602895c2ca box=[0.40 63.78 0.30 | 0.60 64.22 0.70] speed=0.0000 life=13.04
 eden_particles:examples/campfire_smoke half	ticks=400 attempts=157 spawns=73 templates=1 hash=b93596e94309f775 box=[0.21 64.37 0.22 | 0.80 64.50 0.80] speed=0.0704 life=105.71
 eden_particles:examples/campfire_smoke plain	ticks=400 attempts=157 spawns=157 templates=1 hash=de89e4bb78776905 box=[0.20 64.37 0.19 | 0.80 64.50 0.80] speed=0.0694 life=108.45
 eden_particles:examples/campfire_smoke transformed	ticks=400 attempts=168 spawns=168 templates=1 hash=cccc065fafb49007 box=[0.07 64.47 0.02 | 1.14 64.81 1.15] speed=0.1047 life=107.97
+eden_particles:examples/charge half	ticks=400 attempts=1800 spawns=901 templates=2 hash=d0ae1b930222e80d box=[-0.76 63.72 -0.73 | 1.76 66.27 1.78] speed=0.1002 life=16.70
+eden_particles:examples/charge plain	ticks=400 attempts=1800 spawns=1800 templates=2 hash=779717a5be56e2b2 box=[-0.78 63.72 -0.78 | 1.78 66.28 1.78] speed=0.1010 life=16.88
+eden_particles:examples/charge transformed	ticks=400 attempts=1800 spawns=1800 templates=2 hash=d4ec70993dde1dc2 box=[-1.22 63.56 -1.19 | 2.60 67.39 2.61] speed=0.1514 life=16.91
 eden_particles:examples/fountain half	ticks=400 attempts=2400 spawns=1192 templates=1 hash=f2bcf3bae90102c1 box=[0.28 64.53 0.30 | 0.70 64.92 0.70] speed=0.4197 life=37.46
 eden_particles:examples/fountain plain	ticks=400 attempts=2400 spawns=2400 templates=1 hash=1f3ae3ffae9e42aa box=[0.28 64.53 0.30 | 0.70 64.92 0.72] speed=0.4201 life=37.45
 eden_particles:examples/fountain transformed	ticks=400 attempts=2400 spawns=2400 templates=1 hash=4c5acb5184d8a0f2 box=[0.36 64.75 0.37 | 0.96 65.40 0.96] speed=0.6294 life=37.49

@@ -3,18 +3,38 @@ package com.eden.particles.impl.definition;
 import com.eden.particles.impl.codec.Codecs;
 import com.eden.particles.impl.codec.ObjectCodec;
 import com.mojang.serialization.Codec;
+import com.eden.particles.impl.expr.Expr;
 import org.joml.Vector3f;
-import org.joml.Vector3fc;
 
 import java.util.List;
+import java.util.Set;
 
 /** Initial velocity of a spawned particle, relative to the emitter's local frame. */
 public sealed interface VelocityMode {
 
+    default void names(Set<String> out) {
+        switch (this) {
+            case None n -> {
+            }
+            case Fixed f -> {
+                f.direction.names(out);
+                f.speed.names(out);
+            }
+            case Radial r -> r.speed.names(out);
+            case TowardCenter t -> t.speed.names(out);
+            case Tangent t -> t.speed.names(out);
+            case Cone c -> {
+                c.halfAngle.names(out);
+                c.speed.names(out);
+            }
+        }
+    }
+
     record None() implements VelocityMode {
     }
 
-    record Fixed(Vector3fc direction, Speed speed) implements VelocityMode {
+    /** {@code direction} is normalized when used; zero means no movement. */
+    record Fixed(ExprVec3 direction, Speed speed) implements VelocityMode {
     }
 
     /** Away from the shape's centre. */
@@ -29,7 +49,7 @@ public sealed interface VelocityMode {
     }
 
     /** Uniform within {@code halfAngle} degrees of the emitter axis. */
-    record Cone(float halfAngle, Speed speed) implements VelocityMode {
+    record Cone(Expr halfAngle, Speed speed) implements VelocityMode {
     }
 
     None NONE = new None();
@@ -41,16 +61,18 @@ public sealed interface VelocityMode {
         return switch (type) {
             case "none" -> NONE;
             case "fixed" -> {
-                Vector3fc direction = f.required("direction", Codecs.VEC3);
-                if (direction.lengthSquared() < 1e-12f) throw f.failAt("direction", "must not be zero");
-                yield new Fixed(new Vector3f(direction).normalize(), f.required("speed", Speed.CODEC));
+                ExprVec3 direction = f.required("direction", ExprCodecs.VEC3);
+                if (direction.isConstant() && direction.eval(new float[0], new Vector3f()).lengthSquared() < 1e-12f) {
+                    throw f.failAt("direction", "must not be zero");
+                }
+                yield new Fixed(direction, f.required("speed", Speed.CODEC));
             }
             case "radial" -> new Radial(f.required("speed", Speed.CODEC));
             case "toward_center" -> new TowardCenter(f.required("speed", Speed.CODEC));
             case "tangent" -> new Tangent(f.required("speed", Speed.CODEC));
             case "cone" -> {
-                float halfAngle = f.required("half_angle", Codecs.floatIn(0f, 180f));
-                if (halfAngle <= 0f) throw f.failAt("half_angle", "must be greater than 0");
+                Expr halfAngle = f.required("half_angle", ExprCodecs.in(ExprCodecs.NUMBER, 0f, 180f));
+                if (halfAngle instanceof Expr.Const c && c.value() <= 0f) throw f.failAt("half_angle", "must be greater than 0");
                 yield new Cone(halfAngle, f.required("speed", Speed.CODEC));
             }
             default -> throw f.failAt("type", Codecs.unknownChoice("velocity type", type, TYPES));
@@ -58,11 +80,11 @@ public sealed interface VelocityMode {
     }, (velocity, out) -> {
         switch (velocity) {
             case None n -> out.put("type", Codecs.STRING, "none");
-            case Fixed x -> out.put("type", Codecs.STRING, "fixed").put("direction", Codecs.VEC3, x.direction()).put("speed", Speed.CODEC, x.speed());
+            case Fixed x -> out.put("type", Codecs.STRING, "fixed").put("direction", ExprCodecs.VEC3, x.direction()).put("speed", Speed.CODEC, x.speed());
             case Radial r -> out.put("type", Codecs.STRING, "radial").put("speed", Speed.CODEC, r.speed());
             case TowardCenter t -> out.put("type", Codecs.STRING, "toward_center").put("speed", Speed.CODEC, t.speed());
             case Tangent t -> out.put("type", Codecs.STRING, "tangent").put("speed", Speed.CODEC, t.speed());
-            case Cone c -> out.put("type", Codecs.STRING, "cone").put("half_angle", Codecs.FLOAT, c.halfAngle()).put("speed", Speed.CODEC, c.speed());
+            case Cone c -> out.put("type", Codecs.STRING, "cone").put("half_angle", ExprCodecs.NUMBER, c.halfAngle()).put("speed", Speed.CODEC, c.speed());
         }
     });
 }

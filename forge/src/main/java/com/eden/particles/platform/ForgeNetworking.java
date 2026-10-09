@@ -7,6 +7,7 @@ import com.eden.particles.impl.net.ImagePayloads;
 import com.eden.particles.impl.net.PlayEffectPayload;
 import com.eden.particles.impl.net.StopEffectPayload;
 import com.eden.particles.impl.net.SyncDefinitionsPayload;
+import com.eden.particles.impl.net.UpdateEffectPayload;
 import com.eden.particles.platform.services.INetworking;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.server.level.ServerPlayer;
@@ -24,6 +25,7 @@ public class ForgeNetworking implements INetworking {
             .clientbound()
             .addMain(PlayEffectPayload.TYPE, PlayEffectPayload.STREAM_CODEC, (payload, context) -> Sides.client().ifPresent(client -> client.handle(payload)))
             .addMain(StopEffectPayload.TYPE, StopEffectPayload.STREAM_CODEC, (payload, context) -> Sides.client().ifPresent(client -> client.handle(payload)))
+            .addMain(UpdateEffectPayload.TYPE, UpdateEffectPayload.STREAM_CODEC, (payload, context) -> Sides.client().ifPresent(client -> client.handle(payload)))
             .addMain(SyncDefinitionsPayload.TYPE, SyncDefinitionsPayload.STREAM_CODEC, (payload, context) -> Sides.client().ifPresent(client -> client.handle(payload)))
             .addMain(ImagePayloads.Offer.TYPE, ImagePayloads.Offer.STREAM_CODEC, (payload, context) -> Sides.client().ifPresent(client -> client.handle(payload)))
             .addMain(ImagePayloads.Images.TYPE, ImagePayloads.Images.STREAM_CODEC, (payload, context) -> Sides.client().ifPresent(client -> client.handle(payload)))

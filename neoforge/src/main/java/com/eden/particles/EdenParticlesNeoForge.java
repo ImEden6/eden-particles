@@ -9,6 +9,7 @@ import com.eden.particles.impl.net.ImagePayloads;
 import com.eden.particles.impl.net.PlayEffectPayload;
 import com.eden.particles.impl.net.StopEffectPayload;
 import com.eden.particles.impl.net.SyncDefinitionsPayload;
+import com.eden.particles.impl.net.UpdateEffectPayload;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.common.Mod;
@@ -32,6 +33,8 @@ public class EdenParticlesNeoForge {
             registrar.playToClient(PlayEffectPayload.TYPE, PlayEffectPayload.STREAM_CODEC,
                     (payload, context) -> Sides.client().ifPresent(client -> client.handle(payload)));
             registrar.playToClient(StopEffectPayload.TYPE, StopEffectPayload.STREAM_CODEC,
+                    (payload, context) -> Sides.client().ifPresent(client -> client.handle(payload)));
+            registrar.playToClient(UpdateEffectPayload.TYPE, UpdateEffectPayload.STREAM_CODEC,
                     (payload, context) -> Sides.client().ifPresent(client -> client.handle(payload)));
             registrar.playToClient(SyncDefinitionsPayload.TYPE, SyncDefinitionsPayload.STREAM_CODEC,
                     (payload, context) -> Sides.client().ifPresent(client -> client.handle(payload)));

@@ -2,7 +2,6 @@ package com.eden.particles.impl.definition;
 
 import com.eden.particles.impl.codec.Codecs;
 import com.eden.particles.impl.codec.ObjectCodec;
-import com.eden.particles.impl.math.FloatCurve;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.DataResult;
 import org.joml.Vector3f;
@@ -10,6 +9,7 @@ import org.joml.Vector3fc;
 
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * One emitter on an effect's timeline. {@code start} and {@code duration} are in ticks; {@code spin} is degrees/tick
@@ -19,9 +19,9 @@ public record EmitterTrack(
         Optional<String> name,
         int start,
         int duration,
-        Vector3fc offset,
+        ExprVec3 offset,
         Vector3fc axis,
-        Optional<FloatCurve> spin,
+        Optional<ScaledCurve> spin,
         TemplateRef template,
         EmitterShape shape,
         Distribution distribution,
@@ -33,7 +33,6 @@ public record EmitterTrack(
     public enum Distribution { RANDOM, EVEN }
 
     public static final Vector3fc UP = new Vector3f(0f, 1f, 0f);
-    private static final Vector3fc ORIGIN = new Vector3f();
 
     private static final Map<String, Vector3fc> NAMED_AXES = Map.of(
             "x", new Vector3f(1, 0, 0), "y", UP, "z", new Vector3f(0, 0, 1),
@@ -70,9 +69,9 @@ public record EmitterTrack(
                 f.optional("name", Codecs.STRING),
                 f.optional("start", Codecs.intAtLeast(0), 0),
                 duration,
-                f.optional("offset", Codecs.VEC3, ORIGIN),
+                f.optional("offset", ExprCodecs.VEC3, ExprVec3.ZERO),
                 f.optional("axis", AXIS, UP),
-                f.optional("spin", CurveCodecs.CURVE),
+                f.optional("spin", CurveCodecs.SCALED),
                 f.required("template", TemplateRef.CODEC),
                 shape,
                 distribution,
@@ -83,15 +82,24 @@ public record EmitterTrack(
             .put("name", Codecs.STRING, t.name)
             .put("start", Codecs.INT, t.start)
             .put("duration", Codecs.INT, t.duration)
-            .put("offset", Codecs.VEC3, t.offset)
+            .put("offset", ExprCodecs.VEC3, t.offset)
             .put("axis", Codecs.VEC3, t.axis)
-            .put("spin", CurveCodecs.CURVE, t.spin)
+            .put("spin", CurveCodecs.SCALED, t.spin)
             .put("template", TemplateRef.CODEC, t.template)
             .put("shape", EmitterShape.CODEC, t.shape)
             .put("distribution", DISTRIBUTION, t.distribution)
             .put("spawn", SpawnSpec.CODEC, t.spawn)
             .put("velocity", VelocityMode.CODEC, t.velocity)
             .put("important", Codecs.BOOL, t.important));
+
+    /** Input names used by this emitter, not counting its template. */
+    public void names(Set<String> out) {
+        offset.names(out);
+        spin.ifPresent(s -> s.names(out));
+        shape.names(out);
+        spawn.names(out);
+        velocity.names(out);
+    }
 
     public int end() {
         return start + duration;

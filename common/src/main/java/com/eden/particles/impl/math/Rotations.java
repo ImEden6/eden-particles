@@ -16,6 +16,15 @@ public final class Rotations {
                 .rotateZ((float) Math.toRadians(rollDegrees));
     }
 
+    /** Turns +Z toward {@code (dx, dy, dz)} with no roll, so "up" stays as close to +Y as it can. */
+    public static Quaternionf lookAt(double dx, double dy, double dz, Quaternionf out) {
+        double horizontal = Math.sqrt(dx * dx + dz * dz);
+        if (horizontal < 1e-9 && Math.abs(dy) < 1e-9) return out.identity();
+        float yaw = (float) Math.toDegrees(Math.atan2(-dx, dz));
+        float pitch = (float) Math.toDegrees(Math.atan2(-dy, horizontal));
+        return out.rotationY((float) Math.toRadians(-yaw)).rotateX((float) Math.toRadians(pitch));
+    }
+
     /** Shortest-arc rotation from +Y, so the default axis is an exact identity. */
     public static Quaternionf alignYTo(float x, float y, float z) {
         float length = (float) Math.sqrt(x * x + y * y + z * z);

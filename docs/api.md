@@ -26,10 +26,18 @@ The server never simulates particles and doesn't read effect files. Effects live
 EffectAnchor.at(vec3)                           // a fixed point
 EffectAnchor.at(blockPos)                       // bottom centre of a block
 EffectAnchor.entity(entity)                     // follows the entity
-EffectAnchor.entity(entity, new Vec3(0, 1, 0))  // follows with an offset
+EffectAnchor.entity(entity, new Vec3(0, 1, 0))  // follows with a world-space offset
+EffectAnchor.entity(player).eyes()              // from eye height
+EffectAnchor.entity(mob).turning(Turning.BODY)  // turns with the body
+EffectAnchor.entity(player).eyes().turning(Turning.LOOK).offset(0, 0, 0.5)  // half a block in front of the eyes
+EffectAnchor.between(EffectAnchor.entity(caster).eyes(), EffectAnchor.entity(target))  // a beam
 ```
 
-An effect following an entity stops when the entity is removed. The offset is in world space: it doesn't turn when the entity turns. To rotate the effect, use `EffectParams.rotation`. If a client hasn't loaded the entity yet, the effect plays where the entity was when it was sent.
+An effect following an entity stops when the entity is removed. If a client hasn't loaded the entity yet, the effect plays where the entity was when it was sent.
+
+**Turning.** By default the effect keeps world axes and the offset is in world space. With `turning`, the effect turns with the entity and the offset is in the entity's frame: x is left, y is up, z is forward. `BODY` follows the body's yaw, so a mob's aura faces where it walks. `LOOK` follows the head's yaw and pitch, which is where a player is looking. `EffectParams.rotation` is applied on top.
+
+**Between two points.** `between(from, to)` plays at `from`, turned so the effect's +Z axis points at `to`, and sets the effect's built-in `distance` input to the length between them every tick. Either end can follow an entity, with its own eyes, turning and offset; the effect ends when either entity is removed. A server sends it to players within range of either end. See [Inputs](authoring.md#inputs) for writing the effect.
 
 ## Parameters
 
@@ -41,8 +49,13 @@ EffectParams params = EffectParams.builder()
         .seed(12345L)           // same seed → same pattern; random if not set
         .range(96f)             // server send distance
         .persistent()           // server: keep sending to players who arrive later (for looping effects)
+        .input("power", 0.7f)   // an input the effect declares
         .build();
 ```
+
+### Inputs
+
+Effects can declare named numbers, such as a charge level, that change how they look (see [Inputs](authoring.md#inputs)). Set them with `input(name, value)`. Inputs you don't set keep the effect's defaults. On the client, a name the effect doesn't declare is ignored with a warning in the log; the server can't check, because it doesn't read effect files.
 
 ### Persistent effects
 
@@ -64,6 +77,17 @@ On the client, `isAlive()` turns false when the effect finishes. A server doesn'
 
 If nothing could be played (unknown effect on the client, or no players in range on the server), you get `EffectHandle.NONE`.
 
+### Changing a playing effect
+
+```java
+handle.setInput("power", charge);
+handle.setTint(0xFF4040);
+handle.setScale(1.5f);
+handle.setRotation(yaw, 0, 0);
+```
+
+New particles use the new values; particles already spawned keep theirs. On the client the change applies on the next tick. On the server, changes are collected and sent to everyone who has the effect at the end of the tick, so calling a setter every tick for a charge-up is fine. Players who join a persistent effect late get its current values. Setters on `EffectHandle.NONE` do nothing.
+
 ## Client helpers
 
 ```java
@@ -79,8 +103,10 @@ Both are client-only and do nothing on a dedicated server.
 |---|---|---|
 | `/eden_particles play <effect> [pos] [targets]` | server, op 2 | Plays through the network, the same as `EdenParticles.play` on a server level. |
 | `/eden_particles play <effect> <pos> persistent` | server, op 2 | The same, but players who arrive later get it too. |
+| `/eden_particles play <effect> <pos> with <inputs>` | server, op 2 | Plays with inputs, written `power=2 spread=0.5`. |
+| `/eden_particles beam <effect> <from> <to> [inputs]` | server, op 2 | Plays between two entities' eyes, following both. |
 | `/eden_particles stop [targets]` | server, op 2 | Stops every server-started effect for those players. Without targets, it also forgets the dimension's persistent effects. |
-| `/eden_particles_client play <effect>` | client | Plays locally, in front of you. Tab completes loaded effects. |
+| `/eden_particles_client play <effect> [inputs]` | client | Plays locally, in front of you. Tab completes loaded effects. |
 | `/eden_particles_client errors` | client | Lists definition errors from the last reload. |
 | `/eden_particles_client bench <effect> [count]` | client | Measures Eden's tick cost on a grid of effects. |
 
@@ -88,3 +114,4 @@ Both are client-only and do nothing on a dedicated server.
 
 - Only `persistent()` effects reach players who arrive after the effect started.
 - Vanilla-type particles (`"render": {"type": "vanilla"}`) ignore `tint`.
+- If a client hasn't loaded an anchor's entity, that end stays where the entity was when the effect was sent, and doesn't turn.

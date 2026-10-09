@@ -1,0 +1,29 @@
+{
+  "duration": 40,
+  "loop": true,
+  "inputs": { "power": 0.5 },
+  "emitters": [
+    {
+      "name": "gather",
+      "duration": 40,
+      "template": "eden_particles:examples/arcane_mote",
+      "shape": { "type": "sphere", "radius": "0.6 + power * 1.4", "surface": true },
+      "spawn": { "rate": "1 + power * 5" },
+      "velocity": { "type": "toward_center", "speed": { "distance": "0.6 + power * 1.4" } },
+      "offset": [0, 1, 0]
+    },
+    {
+      "name": "core",
+      "duration": 40,
+      "template": {
+        "render": { "type": "sprite", "sprite": "eden_particles:glow", "blend": "additive", "emissive": true },
+        "lifetime": 6,
+        "size": { "keys": [[0, 0.2], [1, 0.35]], "scale": "0.5 + power" },
+        "alpha": [[0, 0.5], [1, 0.0]],
+        "color": "#C9A8FF"
+      },
+      "spawn": { "rate": 1 },
+      "offset": [0, 1, 0]
+    }
+  ]
+}

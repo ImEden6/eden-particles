@@ -1,0 +1,29 @@
+{
+  "duration": 20,
+  "loop": true,
+  "inputs": { "width": 0.15 },
+  "emitters": [
+    {
+      "name": "core",
+      "duration": 20,
+      "template": {
+        "render": { "type": "sprite", "sprite": "eden_particles:glow", "blend": "additive", "emissive": true },
+        "lifetime": [4, 6],
+        "size": { "keys": [[0, 0.3], [1, 0.0]], "scale": "width / 0.15" },
+        "alpha": 0.6,
+        "color": "#7FD4FF"
+      },
+      "shape": { "type": "line", "from": [0, 0, 0], "to": [0, 0, "distance"] },
+      "spawn": { "rate": "distance * 4" }
+    },
+    {
+      "name": "travellers",
+      "duration": 20,
+      "template": "eden_particles:examples/shock_spark",
+      "shape": { "type": "disc", "radius": "width" },
+      "axis": "z",
+      "spawn": { "rate": 1.5 },
+      "velocity": { "type": "fixed", "direction": [0, 0, 1], "speed": { "distance": "distance" } }
+    }
+  ]
+}

@@ -1,12 +1,19 @@
 package com.eden.particles.impl;
 
 import com.eden.particles.Constants;
+import com.eden.particles.api.EdenParticles;
+import com.eden.particles.api.EffectAnchor;
+import com.eden.particles.api.EffectHandle;
+import com.eden.particles.api.EffectParams;
 import com.eden.particles.impl.images.ServerImages;
 import com.eden.particles.impl.load.DefinitionError;
 import com.eden.particles.impl.net.SyncDefinitionsPayload;
 import com.mojang.brigadier.CommandDispatcher;
 import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.entity.decoration.ArmorStand;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -66,6 +73,32 @@ final class SmokeTest {
         check(failures, ServerEffects.persistentCount() == 1, "persistent effect not tracked");
         commands.execute("eden_particles stop", source);
         check(failures, ServerEffects.persistentCount() == 0, "stop didn't forget the persistent effect");
+
+        ServerLevel level = server.overworld();
+        ArmorStand caster = stand(level, 0, 64, 0);
+        ArmorStand target = stand(level, 6, 64, 0);
+        EffectHandle beam = EdenParticles.play(level, ResourceLocation.parse("eden_smoke:burst"),
+                EffectAnchor.between(EffectAnchor.entity(caster).eyes().turning(EffectAnchor.Turning.LOOK).offset(0, 0, 0.5),
+                        EffectAnchor.entity(target)),
+                EffectParams.builder().persistent().input("power", 2).build());
+        check(failures, beam.isAlive(), "beam not alive");
+        beam.setInput("power", 3);
+        beam.setRotation(10, 0, 0);
+        check(failures, ServerEffects.changedCount() == 1, "handle change not queued");
+        ServerEffects.tick(server);
+        check(failures, ServerEffects.changedCount() == 0, "handle change not flushed");
+        target.discard();
+        check(failures, !beam.isAlive(), "beam outlived its target");
+        beam.stop();
+        commands.execute("eden_particles beam eden_smoke:burst @e[type=armor_stand,limit=1] @e[type=armor_stand,limit=1] power=2", source);
+        commands.execute("eden_particles play eden_smoke:burst 0 64 0 with power=2 spread=1", source);
+        caster.discard();
+    }
+
+    private static ArmorStand stand(ServerLevel level, double x, double y, double z) {
+        ArmorStand stand = new ArmorStand(level, x, y, z);
+        level.addFreshEntity(stand);
+        return stand;
     }
 
     private static void check(List<String> failures, boolean ok, String message) {

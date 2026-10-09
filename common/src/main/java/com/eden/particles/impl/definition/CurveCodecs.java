@@ -2,6 +2,7 @@ package com.eden.particles.impl.definition;
 
 import com.eden.particles.impl.codec.Codecs;
 import com.eden.particles.impl.codec.ObjectCodec;
+import com.eden.particles.impl.expr.Expr;
 import com.eden.particles.impl.math.CubicBezierEasing;
 import com.eden.particles.impl.math.Easing;
 import com.eden.particles.impl.math.Easings;
@@ -74,6 +75,25 @@ public final class CurveCodecs {
                 Optional<Easing> ease = f.optional("ease", EASING);
                 FloatCurve.Mode mode = f.optional("mode", MODE, FloatCurve.Mode.EASED);
                 return f.orFail(build(keys, ease, mode));
+            }))
+            .build();
+
+    /**
+     * A curve, or an expression over inputs (constant over time), or a curve object with a {@code scale} expression
+     * multiplying it.
+     */
+    public static final Codec<ScaledCurve> SCALED = Codecs.byKind("a curve or expression", Codecs.encoder(CurveCodecs::encodeScaled))
+            .when(Codecs.Kind.NUMBER, CURVE.xmap(ScaledCurve::of, ScaledCurve::curve))
+            .when(Codecs.Kind.LIST, CURVE.xmap(ScaledCurve::of, ScaledCurve::curve))
+            .when(Codecs.Kind.STRING, ExprCodecs.NUMBER.xmap(
+                    e -> e instanceof Expr.Const c ? ScaledCurve.constant(c.value()) : new ScaledCurve(FloatCurve.constant(1.0), e),
+                    ScaledCurve::scale))
+            .when(Codecs.Kind.MAP, ObjectCodec.decoder("curve", f -> {
+                List<Key> keys = f.required("keys", Codecs.nonEmptyList(KEY));
+                Optional<Easing> ease = f.optional("ease", EASING);
+                FloatCurve.Mode mode = f.optional("mode", MODE, FloatCurve.Mode.EASED);
+                Expr scale = f.optional("scale", ExprCodecs.NUMBER, Expr.ONE);
+                return new ScaledCurve(f.orFail(build(keys, ease, mode)), scale);
             }))
             .build();
 
@@ -158,6 +178,13 @@ public final class CurveCodecs {
             return key.build(ops.empty()).getOrThrow();
         })));
         return map.build(ops.empty()).getOrThrow();
+    }
+
+    private static Object encodeScaled(ScaledCurve scaled, DynamicOps<Object> ops) {
+        if (scaled.scale() instanceof Expr.Const c && c.value() == 1f) return encodeCurve(scaled.curve(), ops);
+        if (scaled.curve().isConstant() && scaled.curve().keyValue(0) == 1.0) return ops.createString(scaled.scale().print());
+        return ops.mergeToMap(encodeCurve(scaled.curve(), ops), ops.createString("scale"),
+                Codecs.encodeWith(ExprCodecs.NUMBER, scaled.scale(), ops)).getOrThrow();
     }
 
     private static Object encodeGradient(Gradient gradient, DynamicOps<Object> ops) {

@@ -1,5 +1,6 @@
 package com.eden.particles.impl.load;
 
+import com.eden.particles.impl.expr.Expr;
 import com.google.gson.JsonParser;
 import net.minecraft.resources.ResourceLocation;
 import org.junit.jupiter.api.Test;
@@ -59,7 +60,7 @@ class LoadingTest {
                 List.of()));
 
         assertTrue(store.effect(id("good")).isPresent());
-        assertEquals(store.effect(id("good")).orElseThrow().templates().get(0).lifetime().min(), 20);
+        assertEquals(store.effect(id("good")).orElseThrow().templates().get(0).lifetime().min(), Expr.constant(20));
         assertTrue(store.effect(id("bad")).isEmpty());
         assertEquals("at emitters[0].template: unknown template 'test:mtoe' (did you mean 'test:mote'?)", report.errors().get(0).message());
     }

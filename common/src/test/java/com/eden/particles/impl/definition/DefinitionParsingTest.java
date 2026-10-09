@@ -1,5 +1,6 @@
 package com.eden.particles.impl.definition;
 
+import com.eden.particles.impl.expr.Expr;
 import com.eden.particles.impl.math.Easings;
 import com.eden.particles.impl.math.FloatCurve;
 import com.google.gson.JsonElement;
@@ -28,25 +29,25 @@ class DefinitionParsingTest {
         assertEquals("charge", charge.name().orElseThrow());
         assertEquals(new TemplateRef.Reference(ResourceLocation.fromNamespaceAndPath("eden_particles", "arcane_mote")), charge.template());
         EmitterShape.Ring ring = assertInstanceOf(EmitterShape.Ring.class, charge.shape());
-        assertEquals(2.0, ring.radius().evaluate(0), 1e-9);
-        assertEquals(0.3 + (2.0 - 0.3) * (1 - 0.125), ring.radius().evaluate(0.5), 1e-9); // in_cubic(0.5) = 0.125
-        assertEquals(18.0, charge.spin().orElseThrow().evaluate(0.3), 0.0);
-        assertEquals(7.0, charge.spawn().rate().orElseThrow().evaluate(0.5), 1e-9);
+        assertEquals(2.0, ring.radius().curve().evaluate(0), 1e-9);
+        assertEquals(0.3 + (2.0 - 0.3) * (1 - 0.125), ring.radius().curve().evaluate(0.5), 1e-9); // in_cubic(0.5) = 0.125
+        assertEquals(18.0, charge.spin().orElseThrow().curve().evaluate(0.3), 0.0);
+        assertEquals(7.0, charge.spawn().rate().orElseThrow().curve().evaluate(0.5), 1e-9);
 
         EmitterTrack flash = effect.emitters().get(1);
         assertEquals(EmitterTrack.Distribution.EVEN, flash.distribution());
         assertTrue(flash.important());
         TemplateRef.Inline inline = assertInstanceOf(TemplateRef.Inline.class, flash.template());
-        assertEquals(new RandomInt(8, 14), inline.template().lifetime());
-        assertEquals(0.85f, inline.template().physics().drag());
+        assertEquals(new RandomInt(Expr.constant(8), Expr.constant(14)), inline.template().lifetime());
+        assertEquals(Expr.constant(0.85f), inline.template().physics().drag());
         VelocityMode.Radial radial = assertInstanceOf(VelocityMode.Radial.class, flash.velocity());
         assertTrue(radial.speed().byDistance());
-        assertEquals(new RandomFloat.Uniform(1.5f, 2.5f), radial.speed().value());
+        assertEquals(new RandomFloat.Uniform(Expr.constant(1.5f), Expr.constant(2.5f)), radial.speed().value());
 
         EmitterTrack embers = effect.emitters().get(2);
         assertTrue(embers.spawn().jitter());
         VelocityMode.Fixed fixed = assertInstanceOf(VelocityMode.Fixed.class, embers.velocity());
-        assertEquals(1f, fixed.direction().y());
+        assertEquals(Expr.constant(1f), fixed.direction().y());
     }
 
     @Test
@@ -61,16 +62,16 @@ class DefinitionParsingTest {
         EmitterTrack hemisphere = effect.emitters().get(1);
         assertEquals(-1f, hemisphere.axis().y(), 1e-6);
         assertEquals(0, hemisphere.spawn().bursts().get(0).at());
-        assertEquals(new RandomInt(3, 6), hemisphere.spawn().bursts().get(0).count());
+        assertEquals(new RandomInt(Expr.constant(3), Expr.constant(6)), hemisphere.spawn().bursts().get(0).count());
 
         EmitterTrack line = effect.emitters().get(2);
-        assertEquals(FloatCurve.Mode.MONOTONE, line.spin().orElseThrow().mode());
-        FloatCurve rate = line.spawn().rate().orElseThrow();
+        assertEquals(FloatCurve.Mode.MONOTONE, line.spin().orElseThrow().curve().mode());
+        FloatCurve rate = line.spawn().rate().orElseThrow().curve();
         assertTrue(rate.isDiscontinuous());
         assertEquals(Easings.STEP, rate.easingInto(2));
 
         EmitterShape.Sphere sphere = assertInstanceOf(EmitterShape.Sphere.class, effect.emitters().get(3).shape());
-        assertEquals(0.25f, sphere.innerRadius());
+        assertEquals(Expr.constant(0.25f), sphere.innerRadius());
 
         EmitterTrack minimal = effect.emitters().get(4);
         assertEquals(EmitterShape.POINT, minimal.shape());
@@ -84,11 +85,11 @@ class DefinitionParsingTest {
         RenderMode.Sprite sprite = assertInstanceOf(RenderMode.Sprite.class, mote.render());
         assertEquals(RenderMode.Blend.ADDITIVE, sprite.blend());
         assertEquals(0xD8C4FF, mote.color().orElseThrow().evaluate(0));
-        assertEquals(0.25, mote.size().orElseThrow().evaluate(0.15), 1e-9);
+        assertEquals(0.25, mote.size().orElseThrow().curve().evaluate(0.15), 1e-9);
 
         ParticleTemplate smoke = Json.decode(ParticleTemplate.CODEC, Json.fixture("templates/campfire_smoke.json"));
         assertInstanceOf(RenderMode.Vanilla.class, smoke.render());
-        assertEquals(new RandomInt(40, 80), smoke.lifetime());
+        assertEquals(new RandomInt(Expr.constant(40), Expr.constant(80)), smoke.lifetime());
         assertTrue(smoke.physics().collide());
     }
 

@@ -1,11 +1,13 @@
 # Runtime benchmark medians from ./gradlew :common:bench, on the machine that last ran -PupdateBaselines.
 # tick: 32 instances of the effect ticking together (restarted when they end); ns per effect tick and per spawn.
 # load: parsing, linking and baking every bundled example.
-load	ms=2.2
-tick examples/arcane_burst	ns_per_tick=1357.3 ns_per_spawn=288.7
-tick examples/campfire_smoke	ns_per_tick=251.5 ns_per_spawn=628.9
-tick examples/fountain	ns_per_tick=2114.0 ns_per_spawn=352.3
-tick examples/healing_aura	ns_per_tick=886.1 ns_per_spawn=253.3
-tick examples/shockwave	ns_per_tick=11072.7 ns_per_spawn=228.2
-tick examples/smoke_puff	ns_per_tick=7738.8 ns_per_spawn=387.0
-tick examples/vortex	ns_per_tick=4171.0 ns_per_spawn=333.5
+load	ms=1.9
+tick examples/arcane_burst	ns_per_tick=476.0 ns_per_spawn=101.2
+tick examples/beam	ns_per_tick=182.3 ns_per_spawn=121.5
+tick examples/campfire_smoke	ns_per_tick=98.6 ns_per_spawn=246.7
+tick examples/charge	ns_per_tick=474.0 ns_per_spawn=105.3
+tick examples/fountain	ns_per_tick=700.2 ns_per_spawn=116.7
+tick examples/healing_aura	ns_per_tick=386.4 ns_per_spawn=110.4
+tick examples/shockwave	ns_per_tick=3756.6 ns_per_spawn=77.5
+tick examples/smoke_puff	ns_per_tick=2407.6 ns_per_spawn=120.4
+tick examples/vortex	ns_per_tick=1498.0 ns_per_spawn=119.7

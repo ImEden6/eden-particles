@@ -8,6 +8,7 @@ import com.eden.particles.impl.net.ImagePayloads;
 import com.eden.particles.impl.net.PlayEffectPayload;
 import com.eden.particles.impl.net.StopEffectPayload;
 import com.eden.particles.impl.net.SyncDefinitionsPayload;
+import com.eden.particles.impl.net.UpdateEffectPayload;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
@@ -26,6 +27,7 @@ public class EdenParticlesFabric implements ModInitializer {
         EdenParticlesCommon.init();
         PayloadTypeRegistry.playS2C().register(PlayEffectPayload.TYPE, PlayEffectPayload.STREAM_CODEC);
         PayloadTypeRegistry.playS2C().register(StopEffectPayload.TYPE, StopEffectPayload.STREAM_CODEC);
+        PayloadTypeRegistry.playS2C().register(UpdateEffectPayload.TYPE, UpdateEffectPayload.STREAM_CODEC);
         PayloadTypeRegistry.playS2C().register(SyncDefinitionsPayload.TYPE, SyncDefinitionsPayload.STREAM_CODEC);
         PayloadTypeRegistry.playS2C().register(ImagePayloads.Offer.TYPE, ImagePayloads.Offer.STREAM_CODEC);
         PayloadTypeRegistry.playS2C().register(ImagePayloads.Images.TYPE, ImagePayloads.Images.STREAM_CODEC);

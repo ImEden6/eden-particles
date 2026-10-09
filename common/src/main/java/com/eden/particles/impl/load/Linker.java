@@ -6,14 +6,17 @@ import com.eden.particles.impl.definition.ParticleEffect;
 import com.eden.particles.impl.definition.ParticleTemplate;
 import com.eden.particles.impl.definition.RenderMode;
 import com.eden.particles.impl.definition.TemplateRef;
+import com.eden.particles.impl.expr.InputNames;
 import net.minecraft.resources.ResourceLocation;
 
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.function.Predicate;
 
 /** Resolves template references. An effect with any unresolvable emitter is dropped and reported. */
@@ -72,6 +75,7 @@ public final class Linker {
                     }
                 }
             }
+            if (problem == null) problem = checkInputs(effect, resolved);
             if (problem != null) {
                 errors.add(new DefinitionError(DefinitionError.Kind.EFFECT, entry.getKey(), sources.getOrDefault(entry.getKey(), ""), problem));
             } else {
@@ -79,6 +83,31 @@ public final class Linker {
             }
         }
         return new Result(Map.copyOf(linked), List.copyOf(errors));
+    }
+
+    /** Every input name an emitter or its template uses must be declared by the effect, or be built in. */
+    private static String checkInputs(ParticleEffect effect, List<ParticleTemplate> templates) {
+        Set<String> declared = new LinkedHashSet<>(effect.inputs().keySet());
+        declared.add(InputNames.DISTANCE);
+        for (int i = 0; i < effect.emitters().size(); i++) {
+            EmitterTrack track = effect.emitters().get(i);
+            Set<String> own = new TreeSet<>();
+            track.names(own);
+            Set<String> fromTemplate = new TreeSet<>();
+            templates.get(i).names(fromTemplate);
+            for (String name : own) {
+                if (!declared.contains(name)) return undeclared("at emitters[" + i + "]: ", name, declared);
+            }
+            for (String name : fromTemplate) {
+                if (!declared.contains(name)) return undeclared("at emitters[" + i + "].template: ", name, declared);
+            }
+        }
+        return null;
+    }
+
+    private static String undeclared(String at, String name, Set<String> declared) {
+        return at + "uses input '" + name + "', which the effect doesn't declare" + Codecs.didYouMean(name, declared)
+                + "; add it to \"inputs\" with a default value";
     }
 
     private static String checkTemplate(ParticleTemplate template, Predicate<ResourceLocation> particleTypeExists) {

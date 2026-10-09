@@ -22,7 +22,7 @@ Sprites go in the vanilla particle atlas, so any PNG under `textures/particle/` 
 
 All times are in **ticks** (20 per second). Distances are in blocks. Speeds are in blocks per tick.
 
-Reload with `F3+T`. `/eden_particles_client errors` lists any problems, and `/eden_particles_client play <effect>` plays one in front of you. The mod ships working examples under `eden_particles:examples/…`.
+Reload with `F3+T`. `/eden_particles_client errors` lists any problems, and `/eden_particles_client play <effect> [inputs]` plays one in front of you (inputs as `power=2 spread=0.5`). The mod ships working examples under `eden_particles:examples/…`.
 
 ## Images in a datapack
 
@@ -76,6 +76,7 @@ In singleplayer, put the zip in `.minecraft/resourcepacks` and turn it on under 
   "duration": 60,
   "loop": false,
   "range": 64,
+  "inputs": { "power": 1 },
   "emitters": [ … ]
 }
 ```
@@ -85,7 +86,46 @@ In singleplayer, put the zip in `.minecraft/resourcepacks` and turn it on under 
 | `duration` | required | Length of the timeline in ticks. |
 | `loop` | `false` | Restart the timeline when it ends. Looping effects play until stopped. |
 | `range` | `64` | Particles thin out from 3/8 of this distance and are gone by 3/4 of it. |
+| `inputs` | none | Numbers the code playing the effect can set, with their defaults. See [Inputs](#inputs). |
 | `emitters` | required | At least one. |
+
+## Inputs
+
+Inputs let one effect cover many cases: a charge level, a size, a spread. Declare them on the effect with a default:
+
+```json
+"inputs": { "power": 1, "spread": 0.5 }
+```
+
+Then write an **expression** in place of a number:
+
+```jsonc
+"spawn": { "rate": "power * 10" },
+"shape": { "type": "sphere", "radius": "0.5 + power * 2" },
+"velocity": { "type": "cone", "half_angle": "spread * 60", "speed": ["power * 0.1", "power * 0.2"] }
+```
+
+A curve that changes over time can be multiplied by an expression with `scale`:
+
+```json
+"radius": { "keys": [[0, 0], [1, 3]], "ease": "out_cubic", "scale": "power" }
+```
+
+- Expressions use numbers, input names, `+ - * / %`, parentheses and the functions `min`, `max`, `clamp(x, lo, hi)`, `lerp(a, b, t)`, `abs`, `floor`, `ceil`, `round`, `sqrt` and `pow`. Dividing by zero gives 0.
+- **`distance`** is built in: the length of a two-point anchor (a beam from one entity to another), and 0 otherwise. Such effects are turned so their +Z axis points at the far end, so a beam is `"shape": {"type": "line", "from": [0, 0, 0], "to": [0, 0, "distance"]}`. See the `eden_particles:examples/beam` example.
+- A template can use inputs too. Every effect using that template must declare them.
+- Using an input the effect doesn't declare is an error when it loads, with a suggestion if it looks like a typo.
+
+Where expressions work:
+
+| | |
+|---|---|
+| Emitters | `spawn.rate`, burst `count`, shape radii, `inner_radius`, box `size`, line `from` / `to`, `offset`, `spin`, velocity `speed`, cone `half_angle`, fixed `direction` |
+| Templates | `lifetime`, `size`, `alpha`, `speed`, `physics.gravity`, `physics.drag` |
+
+Not in timeline values (`duration`, `start`, burst `at`) or colours; use the code's tint for colour.
+
+Code can change inputs while an effect plays. Emitter values follow the change on the next tick. Template values are worked out when each particle spawns, so particles already alive keep theirs.
 
 ## Emitter
 
@@ -116,7 +156,7 @@ In singleplayer, put the zip in `.minecraft/resourcepacks` and turn it on under 
 
 ### Shapes
 
-All shapes are centred on the emitter. Radii are curves over the emitter's life, so a ring can shrink.
+All shapes are centred on the emitter. Radii are curves over the emitter's life, so a ring can shrink. Other sizes are numbers or [expressions](#inputs).
 
 | `type` | Fields |
 |---|---|
@@ -201,6 +241,8 @@ A curve is a number that changes over time `t` from 0 to 1. Times must be strict
 { "keys": [[0, 2], [1, 0.3]], "ease": "in_cubic" }               // eased segments
 { "keys": [{ "t": 0, "v": 0 }, { "t": 1, "v": 1, "ease": "out_back" }] }  // easing per segment
 { "keys": [[0, 0], [0.5, 1], [1, 0.2]], "mode": "monotone" }     // smooth through the keys
+"power * 2"                                  // an expression over inputs, constant over time
+{ "keys": [[0, 0], [1, 1]], "scale": "power" }                   // a curve multiplied by an expression
 ```
 
 - An `ease` on a key shapes the segment *arriving* at that key.
@@ -226,7 +268,8 @@ Values rolled once per particle (speeds, lifetimes, burst counts):
 
 ```jsonc
 0.1                                              // always 0.1
-[0.05, 0.15]                                     // uniform between the two
+"power * 0.1"                                    // an expression over inputs
+[0.05, 0.15]                                     // uniform between the two (either end can be an expression)
 { "min": 0.05, "max": 0.15 }                     // the same
 { "mean": 0.1, "deviation": 0.02, "min": 0 }     // normal distribution, optionally clamped (decimals only)
 ```
@@ -244,8 +287,9 @@ Values rolled once per particle (speeds, lifetimes, burst counts):
 Mistakes are reported with the file and the exact spot:
 
 ```
-effect mymod:boom (pack 'mod/mymod'): at emitters[1].shape.radius: expected a curve (number or list or map), got "big"
+effect mymod:boom (pack 'mod/mymod'): at emitters[1].shape.radius: in 'power *' at column 8: expected a number, input or '('
 at emitters[0]: unknown field 'ofset' (did you mean 'offset'?)
+at emitters[0]: uses input 'powr', which the effect doesn't declare (did you mean 'power'?); add it to "inputs" with a default value
 ```
 
 A broken file is skipped; everything else still loads.

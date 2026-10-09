@@ -5,22 +5,26 @@ import com.eden.particles.impl.definition.EmitterTrack;
 import com.eden.particles.impl.definition.SpawnSpec;
 import com.eden.particles.impl.definition.Speed;
 import com.eden.particles.impl.definition.VelocityMode;
+import com.eden.particles.impl.expr.Expr;
+import com.eden.particles.impl.expr.InputNames;
 import com.eden.particles.impl.math.Kinematics;
 import com.eden.particles.impl.math.ParticleRandom;
 import com.eden.particles.impl.math.Rng;
 import com.eden.particles.impl.math.ShapeSampler;
 import com.eden.particles.impl.math.SpawnIntegrator;
 import org.joml.Quaternionf;
+import org.joml.Quaternionfc;
 import org.joml.Vector3d;
 import org.joml.Vector3dc;
 import org.joml.Vector3f;
 
+import java.util.Arrays;
 import java.util.List;
 
 /**
- * One playing effect. Each tick: gate emitters by the timeline, count spawns, then sample and transform each
- * particle into world space. Particle randomness comes from per-particle seeds, so a lower keep fraction shows a
- * subset of the same particles.
+ * One playing effect. Each tick: gate emitters by the timeline, evaluate input-dependent values, count spawns, then
+ * sample and transform each particle into world space. Particle randomness comes from per-particle seeds, so a lower
+ * keep fraction shows a subset of the same particles, and changing inputs doesn't change which particles are rolled.
  */
 public final class EffectInstance {
 
@@ -30,9 +34,14 @@ public final class EffectInstance {
 
     private final BakedEffect effect;
     private final Anchor anchor;
-    private final PlayParams params;
     private final long[] emitterSeeds;
     private final EmitterState[] states;
+    private final float[] inputs;
+    private float scale;
+    private final Quaternionf rotation = new Quaternionf();
+    private int tint;
+    private final Anchor.Placement placement = new Anchor.Placement();
+    private final Quaternionf base = new Quaternionf();
     private final Vector3d current = new Vector3d();
     private final Vector3d previous = new Vector3d();
     private boolean hasPrevious;
@@ -44,12 +53,17 @@ public final class EffectInstance {
     private final Vector3f position = new Vector3f();
     private final Vector3f direction = new Vector3f();
     private final Vector3f offset = new Vector3f();
+    private final Vector3f lineFrom = new Vector3f();
+    private final Vector3f lineTo = new Vector3f();
     private final Quaternionf frame = new Quaternionf();
 
     public EffectInstance(BakedEffect effect, Anchor anchor, PlayParams params) {
         this.effect = effect;
         this.anchor = anchor;
-        this.params = params;
+        this.inputs = Arrays.copyOf(effect.defaults(), Math.max(effect.defaults().length, InputNames.count()));
+        this.scale = params.scale();
+        this.rotation.set(params.rotation());
+        this.tint = params.tint();
         int count = effect.emitters().size();
         this.emitterSeeds = new long[count];
         this.states = new EmitterState[count];
@@ -62,10 +76,13 @@ public final class EffectInstance {
     /** Resolves the anchor for this tick; false once the effect is over. */
     public boolean prepare() {
         if (finished) return false;
-        if (!anchor.resolve(current)) {
+        if (!anchor.resolve(placement)) {
             finished = true;
             return false;
         }
+        current.set(placement.position);
+        inputs[InputNames.DISTANCE_ID] = placement.distance;
+        base.set(placement.facing).mul(rotation);
         if (!hasPrevious) {
             previous.set(current);
             hasPrevious = true;
@@ -87,6 +104,26 @@ public final class EffectInstance {
 
     public void stop() {
         finished = true;
+    }
+
+    /** @return false if the effect doesn't declare this input */
+    public boolean setInput(String name, float value) {
+        Integer id = effect.inputIds().get(name);
+        if (id == null) return false;
+        inputs[id] = value;
+        return true;
+    }
+
+    public void setScale(float scale) {
+        this.scale = scale;
+    }
+
+    public void setRotation(Quaternionfc rotation) {
+        this.rotation.set(rotation);
+    }
+
+    public void setTint(int tint) {
+        this.tint = tint;
     }
 
     /**
@@ -119,15 +156,19 @@ public final class EffectInstance {
             EmitterState state = states[emitter.index()];
             long seed = emitterSeeds[emitter.index()];
             int local = age - track.start();
-            state.spinDegrees = (state.spinDegrees + emitter.spin().sample((local + 0.5f) / track.duration())) % 360f;
+            emitter.template().evaluate(inputs, state.values);
+            state.radiusScale = emitter.radius().scale(inputs);
+            float spin = emitter.spin().curve().sample((local + 0.5f) / track.duration()) * emitter.spin().scale(inputs);
+            state.spinDegrees = (state.spinDegrees + spin) % 360f;
             float fraction = track.important() ? keepImportant : keep;
 
             if (emitter.rate().isPresent()) {
                 SpawnIntegrator rate = emitter.rate().get();
+                double rateScale = Math.max(0f, emitter.rateScale().eval(inputs));
                 int count = track.spawn().jitter()
-                        ? SpawnIntegrator.poisson(rate.expectedInTick(local),
+                        ? SpawnIntegrator.poisson(rate.expectedInTick(local) * rateScale,
                                 random.reset(Rng.derive(seed ^ JITTER_SALT, (long) loops * track.duration() + local)))
-                        : state.accumulator.next(rate, local);
+                        : state.accumulator.next(rate, local, rateScale);
                 for (int j = 0; j < count; j++) {
                     spawn(emitter, state, sink, fraction, local, SpawnIntegrator.subTickOffset(j, count, 0.5f), -1, 0, 0f);
                 }
@@ -138,7 +179,7 @@ public final class EffectInstance {
             for (int b = 0; b < bursts.size(); b++) {
                 if (bursts.get(b).at() != local) continue;
                 random.reset(Rng.derive(seed ^ BURST_SALT, (long) loops * bursts.size() + b));
-                int count = bursts.get(b).count().sample(random);
+                int count = Math.max(0, bursts.get(b).count().sample(random, inputs));
                 float phase = random.nextFloat() * TWO_PI;
                 for (int k = 0; k < count; k++) {
                     spawn(emitter, state, sink, fraction, local, 1f, k, count, phase);
@@ -175,22 +216,21 @@ public final class EffectInstance {
         BakedTemplate template = emitter.template();
         float u = Math.min(1f, (local + tau) / track.duration());
         boolean even = index >= 0 && track.distribution() == EmitterTrack.Distribution.EVEN;
-        sampleShape(track.shape(), emitter.radius().sample(u), even, index, count, phase);
-        int lifetime = template.lifetime().sample(random);
-        float speed = sampleVelocity(track.velocity(), lifetime, template.physics().drag());
+        sampleShape(track.shape(), emitter.radius().curve().sample(u) * state.radiusScale, even, index, count, phase);
+        int lifetime = Math.max(1, template.lifetime().sample(random, inputs));
+        float speed = sampleVelocity(track.velocity(), lifetime, state.values.drag);
         float variant = random.nextFloat();
 
-        float scale = params.scale();
-        frame.set(params.rotation()).mul(emitter.axisRotation()).rotateY((float) Math.toRadians(state.spinDegrees));
+        frame.set(base).mul(emitter.axisRotation()).rotateY((float) Math.toRadians(state.spinDegrees));
         frame.transform(position).mul(scale);
         frame.transform(direction).mul(speed * scale);
-        params.rotation().transform(offset.set(track.offset())).mul(scale);
+        base.transform(track.offset().eval(inputs, offset)).mul(scale);
 
         double advance = 1.0 - tau;
         double x = previous.x + (current.x - previous.x) * tau + offset.x + position.x + direction.x * advance;
         double y = previous.y + (current.y - previous.y) * tau + offset.y + position.y + direction.y * advance;
         double z = previous.z + (current.z - previous.z) * tau + offset.z + position.z + direction.z * advance;
-        sink.spawn(template, x, y, z, direction.x, direction.y, direction.z, lifetime, scale, params.tint(), variant);
+        sink.spawn(template, x, y, z, direction.x, direction.y, direction.z, lifetime, scale, tint, variant, state.values);
     }
 
     private void sampleShape(EmitterShape shape, float radius, boolean even, int index, int count, float phase) {
@@ -199,12 +239,12 @@ public final class EffectInstance {
             case EmitterShape.Sphere s -> {
                 if (even) {
                     ShapeSampler.fibonacciSphere(index, count, position).rotateY(phase);
-                    float r = s.surface() ? radius : shellRadius(s.innerRadius(), radius, (index + 0.5f) / count);
+                    float r = s.surface() ? radius : shellRadius(nonNegative(s.innerRadius()), radius, (index + 0.5f) / count);
                     position.mul(r);
                 } else if (s.surface()) {
                     ShapeSampler.sphereSurface(random.nextFloat(), random.nextFloat(), position).mul(radius);
                 } else {
-                    ShapeSampler.sphereVolume(s.innerRadius(), radius, random.nextFloat(), random.nextFloat(), random.nextFloat(), position);
+                    ShapeSampler.sphereVolume(nonNegative(s.innerRadius()), radius, random.nextFloat(), random.nextFloat(), random.nextFloat(), position);
                 }
             }
             case EmitterShape.Hemisphere h -> {
@@ -217,12 +257,13 @@ public final class EffectInstance {
             }
             case EmitterShape.Disc d -> {
                 if (even) {
-                    float r0 = d.innerRadius() * d.innerRadius();
+                    float inner = nonNegative(d.innerRadius());
+                    float r0 = inner * inner;
                     float r = (float) Math.sqrt((index + 0.5f) / count * (radius * radius - r0) + r0);
                     float theta = index * ShapeSampler.GOLDEN_ANGLE + phase;
                     position.set(r * (float) Math.cos(theta), 0f, r * (float) Math.sin(theta));
                 } else {
-                    ShapeSampler.disc(d.innerRadius(), radius, random.nextFloat(), random.nextFloat(), position);
+                    ShapeSampler.disc(nonNegative(d.innerRadius()), radius, random.nextFloat(), random.nextFloat(), position);
                 }
             }
             case EmitterShape.Ring r -> {
@@ -230,15 +271,19 @@ public final class EffectInstance {
                 else ShapeSampler.ring(radius, random.nextFloat(), position);
             }
             case EmitterShape.Box b -> {
-                float hx = b.size().x() / 2f, hy = b.size().y() / 2f, hz = b.size().z() / 2f;
+                float hx = b.size().x().eval(inputs) / 2f, hy = b.size().y().eval(inputs) / 2f, hz = b.size().z().eval(inputs) / 2f;
                 if (b.surface()) {
                     ShapeSampler.boxSurface(hx, hy, hz, random.nextFloat(), random.nextFloat(), random.nextFloat(), position);
                 } else {
                     ShapeSampler.boxVolume(hx, hy, hz, random.nextFloat(), random.nextFloat(), random.nextFloat(), position);
                 }
             }
-            case EmitterShape.Line l -> ShapeSampler.line(l.from(), l.to(), random.nextFloat(), position);
+            case EmitterShape.Line l -> ShapeSampler.line(l.from().eval(inputs, lineFrom), l.to().eval(inputs, lineTo), random.nextFloat(), position);
         }
+    }
+
+    private float nonNegative(Expr expr) {
+        return Math.max(0f, expr.eval(inputs));
     }
 
     private static float shellRadius(float inner, float outer, float w) {
@@ -255,7 +300,9 @@ public final class EffectInstance {
                 return 0f;
             }
             case VelocityMode.Fixed f -> {
-                direction.set(f.direction());
+                f.direction().eval(inputs, direction);
+                if (direction.lengthSquared() < 1e-12f) direction.zero();
+                else direction.normalize();
                 speed = f.speed();
             }
             case VelocityMode.Radial r -> {
@@ -273,11 +320,12 @@ public final class EffectInstance {
                 speed = t.speed();
             }
             case VelocityMode.Cone c -> {
-                ShapeSampler.coneDirection((float) Math.toRadians(c.halfAngle()), random.nextFloat(), random.nextFloat(), direction);
+                float halfAngle = Math.max(0f, Math.min(180f, c.halfAngle().eval(inputs)));
+                ShapeSampler.coneDirection((float) Math.toRadians(halfAngle), random.nextFloat(), random.nextFloat(), direction);
                 speed = c.speed();
             }
         }
-        float value = speed.value().sample(random);
+        float value = speed.value().sample(random, inputs);
         return speed.byDistance() ? (float) Kinematics.speedForDistance(value, drag, lifetime) : value;
     }
 
@@ -291,6 +339,8 @@ public final class EffectInstance {
 
     private static final class EmitterState {
         final SpawnIntegrator.Accumulator accumulator = new SpawnIntegrator.Accumulator();
+        final TemplateValues values = new TemplateValues();
+        float radiusScale;
         long counter;
         float spinDegrees;
     }

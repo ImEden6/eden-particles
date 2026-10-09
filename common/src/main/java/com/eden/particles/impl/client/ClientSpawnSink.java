@@ -5,6 +5,7 @@ import com.eden.particles.impl.definition.RenderMode;
 import com.eden.particles.impl.definition.SpriteRef;
 import com.eden.particles.impl.runtime.BakedTemplate;
 import com.eden.particles.impl.runtime.SpawnSink;
+import com.eden.particles.impl.runtime.TemplateValues;
 import com.eden.particles.mixin.ParticleAccessor;
 import com.eden.particles.mixin.ParticleEngineAccessor;
 import net.minecraft.client.Minecraft;
@@ -49,7 +50,7 @@ final class ClientSpawnSink implements SpawnSink {
 
     @Override
     public void spawn(BakedTemplate template, double x, double y, double z, double vx, double vy, double vz,
-                      int lifetime, float scale, int tint, float variant) {
+                      int lifetime, float scale, int tint, float variant, TemplateValues values) {
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.level == null) return;
         switch (template.render()) {
@@ -58,7 +59,7 @@ final class ClientSpawnSink implements SpawnSink {
                 Optional<ResolvedSprite> frames = resolve(sprite.sprite());
                 if (frames.isEmpty() || !admit(EdenRenderTypes.of(frames.get().synced(), sprite.blend()))) return;
                 minecraft.particleEngine.add(new EdenParticle(minecraft.level, x, y, z, vx, vy, vz,
-                        template, sprite, frames.get(), lifetime, scale, tint, variant));
+                        template, sprite, frames.get(), lifetime, scale, tint, variant, values));
             }
             case RenderMode.Vanilla vanilla -> {
                 // The linker only admits simple particle types.
@@ -68,8 +69,8 @@ final class ClientSpawnSink implements SpawnSink {
                 particle.setLifetime(lifetime);
                 if (scale != 1f) particle.scale(scale);
                 ParticleAccessor accessor = (ParticleAccessor) particle;
-                accessor.eden_particles$setGravity(template.physics().gravity() * scale);
-                accessor.eden_particles$setFriction(template.physics().drag());
+                accessor.eden_particles$setGravity(values.gravity * scale);
+                accessor.eden_particles$setFriction(values.drag);
                 accessor.eden_particles$setHasPhysics(template.physics().collide());
                 minecraft.particleEngine.add(particle);
             }

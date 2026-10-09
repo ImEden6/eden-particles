@@ -79,7 +79,7 @@ public final class RuntimeBench {
 
     private static Map<String, Double> tickCase(BakedEffect effect) {
         long[] spawns = new long[1];
-        SpawnSink sink = (t, x, y, z, vx, vy, vz, life, scale, tint, variant) -> {
+        SpawnSink sink = (t, x, y, z, vx, vy, vz, life, scale, tint, variant, values) -> {
             blackhole += x + vy;
             spawns[0]++;
         };

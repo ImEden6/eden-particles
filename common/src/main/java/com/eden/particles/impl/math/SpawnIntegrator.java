@@ -84,7 +84,12 @@ public final class SpawnIntegrator {
         private double carry;
 
         public int next(SpawnIntegrator integrator, int tick) {
-            carry += integrator.expectedInTick(tick);
+            return next(integrator, tick, 1.0);
+        }
+
+        /** {@code scale} multiplies this tick's expected count; the fractional remainder carries over either way. */
+        public int next(SpawnIntegrator integrator, int tick, double scale) {
+            carry += integrator.expectedInTick(tick) * scale;
             int count = (int) Math.floor(carry + ROUNDING_SLACK);
             carry -= count;
             return count;

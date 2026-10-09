@@ -12,6 +12,10 @@ import com.mojang.serialization.DynamicOps;
  */
 public record Speed(RandomFloat value, boolean byDistance) {
 
+    public void names(java.util.Set<String> out) {
+        value.names(out);
+    }
+
     public static final Speed ZERO = new Speed(new RandomFloat.Constant(0f), false);
 
     private static final Codec<Speed> DISTANCE = ObjectCodec.of("distance",

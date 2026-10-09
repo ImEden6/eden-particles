@@ -2,9 +2,12 @@ package com.eden.particles.impl.client;
 
 import com.eden.particles.api.EdenParticles;
 import com.eden.particles.api.EffectAnchor;
+import com.eden.particles.api.EffectParams;
+import com.eden.particles.impl.InputArgs;
 import com.eden.particles.impl.load.DefinitionError;
 import com.eden.particles.impl.load.LoadReport;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
+import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.builder.RequiredArgumentBuilder;
 import net.minecraft.ChatFormatting;
@@ -16,7 +19,7 @@ import net.minecraft.world.phys.Vec3;
 import java.util.function.BiConsumer;
 
 /**
- * {@code /eden_particles_client errors}, {@code play <effect>} and {@code bench <effect> [count]}. A separate root from the
+ * {@code /eden_particles_client errors}, {@code play <effect> [inputs]} and {@code bench <effect> [count]}. A separate root from the
  * server command, because Fabric resolves a shared root against the client tree only.
  */
 public final class ClientCommands {
@@ -46,26 +49,37 @@ public final class ClientCommands {
                 }))
                 .then(LiteralArgumentBuilder.<S>literal("play")
                         .then(RequiredArgumentBuilder.<S, ResourceLocation>argument("effect", new EffectIdArgument())
-                                .executes(context -> {
-                                    ResourceLocation effect = context.getArgument("effect", ResourceLocation.class);
-                                    Minecraft minecraft = Minecraft.getInstance();
-                                    if (minecraft.player == null || minecraft.level == null) return 0;
-                                    if (!EdenParticles.isLoaded(effect)) {
-                                        feedback.accept(context.getSource(), Component.literal("Unknown effect " + effect).withStyle(ChatFormatting.RED));
-                                        return 0;
-                                    }
-                                    Vec3 look = minecraft.player.getLookAngle();
-                                    Vec3 at = minecraft.player.getEyePosition().add(look.x * 4, -1.0, look.z * 4);
-                                    EdenParticles.play(minecraft.level, effect, EffectAnchor.at(at));
-                                    feedback.accept(context.getSource(), Component.literal("Playing " + effect));
-                                    return 1;
-                                })))
+                                .executes(context -> play(context.getSource(), context.getArgument("effect", ResourceLocation.class), "", feedback))
+                                .then(RequiredArgumentBuilder.<S, String>argument("inputs", StringArgumentType.greedyString())
+                                        .executes(context -> play(context.getSource(), context.getArgument("effect", ResourceLocation.class),
+                                                context.getArgument("inputs", String.class), feedback)))))
                 .then(LiteralArgumentBuilder.<S>literal("bench")
                         .then(RequiredArgumentBuilder.<S, ResourceLocation>argument("effect", new EffectIdArgument())
                                 .executes(context -> bench(context.getSource(), context.getArgument("effect", ResourceLocation.class), DEFAULT_BENCH_COUNT, feedback))
                                 .then(RequiredArgumentBuilder.<S, Integer>argument("count", IntegerArgumentType.integer(1, MAX_BENCH_COUNT))
                                         .executes(context -> bench(context.getSource(), context.getArgument("effect", ResourceLocation.class),
                                                 context.getArgument("count", Integer.class), feedback)))));
+    }
+
+    private static <S> int play(S source, ResourceLocation effect, String inputs, BiConsumer<S, Component> feedback) {
+        Minecraft minecraft = Minecraft.getInstance();
+        if (minecraft.player == null || minecraft.level == null) return 0;
+        if (!EdenParticles.isLoaded(effect)) {
+            feedback.accept(source, Component.literal("Unknown effect " + effect).withStyle(ChatFormatting.RED));
+            return 0;
+        }
+        EffectParams params;
+        try {
+            params = InputArgs.apply(inputs, EffectParams.builder()).build();
+        } catch (IllegalArgumentException e) {
+            feedback.accept(source, Component.literal("Bad inputs: " + e.getMessage()).withStyle(ChatFormatting.RED));
+            return 0;
+        }
+        Vec3 look = minecraft.player.getLookAngle();
+        Vec3 at = minecraft.player.getEyePosition().add(look.x * 4, -1.0, look.z * 4);
+        EdenParticles.play(minecraft.level, effect, EffectAnchor.at(at), params);
+        feedback.accept(source, Component.literal("Playing " + effect));
+        return 1;
     }
 
     private static <S> int bench(S source, ResourceLocation effect, int count, BiConsumer<S, Component> feedback) {

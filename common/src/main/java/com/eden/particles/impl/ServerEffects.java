@@ -3,8 +3,11 @@ package com.eden.particles.impl;
 import com.eden.particles.api.EffectAnchor;
 import com.eden.particles.api.EffectHandle;
 import com.eden.particles.api.EffectParams;
+import com.eden.particles.impl.net.AnchorData;
+import com.eden.particles.impl.net.EffectState;
 import com.eden.particles.impl.net.PlayEffectPayload;
 import com.eden.particles.impl.net.StopEffectPayload;
+import com.eden.particles.impl.net.UpdateEffectPayload;
 import com.eden.particles.platform.Services;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
@@ -15,6 +18,7 @@ import net.minecraft.world.entity.Entity;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -22,7 +26,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Sends effects to clients. The server never simulates particles and doesn't know effect definitions. Persistent
- * effects are remembered and re-sent to players who come into range later.
+ * effects are remembered and re-sent to players who come into range later. Handle changes are sent once per tick.
  */
 public final class ServerEffects {
 
@@ -31,6 +35,7 @@ public final class ServerEffects {
 
     private static final AtomicInteger NEXT_ID = new AtomicInteger();
     private static final List<Handle> PERSISTENT = new ArrayList<>();
+    private static final Set<Handle> CHANGED = new LinkedHashSet<>();
 
     private ServerEffects() {
     }
@@ -78,9 +83,19 @@ public final class ServerEffects {
         return PERSISTENT.size();
     }
 
+    static int changedCount() {
+        return CHANGED.size();
+    }
+
     /** Called every server tick by the loader glue. */
     public static void tick(MinecraftServer server) {
         if (SmokeTest.ENABLED) SmokeTest.tick(server);
+        if (!CHANGED.isEmpty()) {
+            for (Handle handle : CHANGED) {
+                if (handle.level.getServer() == server) handle.sendUpdate();
+            }
+            CHANGED.clear();
+        }
         if (PERSISTENT.isEmpty() || server.getTickCount() % LATE_JOIN_INTERVAL != 0) return;
         for (Iterator<Handle> it = PERSISTENT.iterator(); it.hasNext(); ) {
             Handle handle = it.next();
@@ -98,21 +113,24 @@ public final class ServerEffects {
         private final ServerLevel level;
         private final ResourceLocation effect;
         private final EffectAnchor anchor;
-        private final EffectParams params;
+        private final float range;
         private final long seed;
         private final long startTime;
-        private final Entity entity;
+        private final List<Entity> entities = new ArrayList<>(2);
         private final Set<UUID> recipients = new HashSet<>();
+        private EffectState state;
         private boolean stopped;
 
         Handle(ServerLevel level, ResourceLocation effect, EffectAnchor anchor, EffectParams params) {
             this.level = level;
             this.effect = effect;
             this.anchor = anchor;
-            this.params = params;
+            this.range = params.range();
+            this.state = EffectState.of(params);
             this.seed = params.seed().orElseGet(() -> level.getRandom().nextLong());
             this.startTime = level.getGameTime();
-            this.entity = anchor.entity().orElse(null);
+            anchor.entity().ifPresent(entities::add);
+            anchor.target().flatMap(EffectAnchor::entity).ifPresent(entities::add);
         }
 
         /** Sends to players in range who don't have it yet; forgets players who left the level so they get it again. */
@@ -121,21 +139,63 @@ public final class ServerEffects {
                 ServerPlayer player = level.getServer().getPlayerList().getPlayer(uuid);
                 return player == null || player.serverLevel() != level;
             });
-            double rangeSq = (double) params.range() * params.range();
+            double rangeSq = (double) range * range;
             for (ServerPlayer player : level.players()) {
-                if (!recipients.contains(player.getUUID()) && player.distanceToSqr(anchor.position()) <= rangeSq) {
+                if (!recipients.contains(player.getUUID()) && inRange(player, rangeSq)) {
                     sendTo(player);
                 }
             }
         }
 
+        private boolean inRange(ServerPlayer player, double rangeSq) {
+            if (player.distanceToSqr(anchor.position()) <= rangeSq) return true;
+            return anchor.target().map(to -> player.distanceToSqr(to.position()) <= rangeSq).orElse(false);
+        }
+
         void sendTo(ServerPlayer player) {
             if (!Services.NETWORK.canSend(player, PlayEffectPayload.TYPE)) return;
             int elapsed = (int) Math.min(Integer.MAX_VALUE, level.getGameTime() - startTime);
-            Services.NETWORK.send(player, new PlayEffectPayload(id, effect, anchor.position(),
-                    entity != null ? entity.getId() : -1, anchor.offset(),
-                    params.scale(), params.yaw(), params.pitch(), params.roll(), params.tint(), seed, elapsed));
+            Services.NETWORK.send(player, new PlayEffectPayload(id, effect, AnchorData.of(anchor.start()),
+                    anchor.target().map(AnchorData::of), state, seed, elapsed));
             recipients.add(player.getUUID());
+        }
+
+        void sendUpdate() {
+            if (stopped) return;
+            UpdateEffectPayload payload = new UpdateEffectPayload(id, state);
+            for (UUID uuid : recipients) {
+                ServerPlayer player = level.getServer().getPlayerList().getPlayer(uuid);
+                if (player != null) Services.NETWORK.send(player, payload);
+            }
+        }
+
+        private void changed(EffectState next) {
+            if (stopped || next.equals(state)) return;
+            state = next;
+            CHANGED.add(this);
+        }
+
+        @Override
+        public void setInput(String name, float value) {
+            ParamChecks.input(name, value);
+            changed(state.withInput(name, value));
+        }
+
+        @Override
+        public void setTint(int rgb) {
+            changed(state.withTint(rgb & 0xFFFFFF));
+        }
+
+        @Override
+        public void setScale(float scale) {
+            ParamChecks.scale(scale);
+            changed(state.withScale(scale));
+        }
+
+        @Override
+        public void setRotation(float yaw, float pitch, float roll) {
+            ParamChecks.rotation(yaw, pitch, roll);
+            changed(state.withRotation(yaw, pitch, roll));
         }
 
         @Override
@@ -143,6 +203,7 @@ public final class ServerEffects {
             if (stopped) return;
             stopped = true;
             PERSISTENT.remove(this);
+            CHANGED.remove(this);
             StopEffectPayload payload = new StopEffectPayload(id);
             for (UUID uuid : recipients) {
                 ServerPlayer player = level.getServer().getPlayerList().getPlayer(uuid);
@@ -152,8 +213,12 @@ public final class ServerEffects {
 
         @Override
         public boolean isAlive() {
+            if (stopped) return false;
             // Players aren't removed when they change dimension, so check the level too.
-            return !stopped && (entity == null || (!entity.isRemoved() && entity.level() == level));
+            for (Entity entity : entities) {
+                if (entity.isRemoved() || entity.level() != level) return false;
+            }
+            return true;
         }
     }
 }

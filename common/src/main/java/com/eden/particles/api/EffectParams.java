@@ -1,5 +1,10 @@
 package com.eden.particles.api;
 
+import com.eden.particles.impl.ParamChecks;
+
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.OptionalLong;
 
 /**
@@ -19,6 +24,7 @@ public final class EffectParams {
     private final OptionalLong seed;
     private final float range;
     private final boolean persistent;
+    private final Map<String, Float> inputs;
 
     private EffectParams(Builder builder) {
         this.scale = builder.scale;
@@ -29,6 +35,7 @@ public final class EffectParams {
         this.seed = builder.seed;
         this.range = builder.range;
         this.persistent = builder.persistent;
+        this.inputs = Collections.unmodifiableMap(new LinkedHashMap<>(builder.inputs));
     }
 
     public static Builder builder() {
@@ -72,6 +79,11 @@ public final class EffectParams {
         return persistent;
     }
 
+    /** Values for inputs the effect declares; inputs not listed keep the effect's defaults. */
+    public Map<String, Float> inputs() {
+        return inputs;
+    }
+
     public static final class Builder {
         private float scale = 1f;
         private float yaw;
@@ -81,12 +93,13 @@ public final class EffectParams {
         private OptionalLong seed = OptionalLong.empty();
         private float range = DEFAULT_RANGE;
         private boolean persistent;
+        private final Map<String, Float> inputs = new LinkedHashMap<>();
 
         private Builder() {
         }
 
         public Builder scale(float scale) {
-            if (!(scale > 0f) || !Float.isFinite(scale)) throw new IllegalArgumentException("scale must be positive, got " + scale);
+            ParamChecks.scale(scale);
             this.scale = scale;
             return this;
         }
@@ -122,6 +135,13 @@ public final class EffectParams {
          */
         public Builder persistent() {
             this.persistent = true;
+            return this;
+        }
+
+        /** Sets an input the effect declares in its {@code "inputs"}. Names the effect doesn't declare are ignored. */
+        public Builder input(String name, float value) {
+            ParamChecks.input(name, value);
+            inputs.put(name, value);
             return this;
         }
 

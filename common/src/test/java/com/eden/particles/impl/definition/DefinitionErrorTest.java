@@ -33,8 +33,8 @@ class DefinitionErrorTest {
     @Test
     void nestedErrorsCarryTheirPath() {
         String error = Json.error(ParticleEffect.CODEC,
-                effect("{\"duration\": 10, " + TEMPLATE + ", \"spawn\": {\"rate\": 1}, \"shape\": {\"type\": \"sphere\", \"radius\": \"big\"}}"));
-        assertContains("at emitters[0].shape.radius: expected a curve (number or list or map), got \"big\"", error);
+                effect("{\"duration\": 10, " + TEMPLATE + ", \"spawn\": {\"rate\": 1}, \"shape\": {\"type\": \"sphere\", \"radius\": true}}"));
+        assertContains("at emitters[0].shape.radius: expected a curve or expression (number or string or list or map), got true", error);
     }
 
     @Test
