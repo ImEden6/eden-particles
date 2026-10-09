@@ -40,6 +40,17 @@ final class SmokeTest {
             Constants.LOG.error("Eden's Particles smoke test FAILED: {}", String.join("; ", failures));
         }
         server.halt(false);
+        // Forge's dev server leaves a non-daemon thread behind, so exit once the server thread has finished saving.
+        int status = failures.isEmpty() ? 0 : 1;
+        Thread exit = new Thread(() -> {
+            try {
+                server.getRunningThread().join();
+            } catch (InterruptedException ignored) {
+            }
+            System.exit(status);
+        }, "Eden's Particles smoke exit");
+        exit.setDaemon(true);
+        exit.start();
     }
 
     private static void run(MinecraftServer server, List<String> failures) throws Exception {
