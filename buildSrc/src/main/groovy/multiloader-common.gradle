@@ -121,8 +121,21 @@ publishing {
         }
     }
     repositories {
-        maven {
-            url System.getenv('local_maven_url')
+        // In GitHub Actions: this repository's GitHub Packages, with the workflow's token.
+        if (System.getenv('GITHUB_REPOSITORY')) {
+            maven {
+                name = 'GitHubPackages'
+                url = "https://maven.pkg.github.com/${System.getenv('GITHUB_REPOSITORY')}"
+                credentials {
+                    username = System.getenv('GITHUB_ACTOR')
+                    password = System.getenv('GITHUB_TOKEN')
+                }
+            }
+        }
+        if (System.getenv('local_maven_url')) {
+            maven {
+                url System.getenv('local_maven_url')
+            }
         }
     }
 }

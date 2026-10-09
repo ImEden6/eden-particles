@@ -13,6 +13,35 @@ EdenParticles.play(level, ResourceLocation.fromNamespaceAndPath("mymod", "boom")
 
 Examples ship with the mod: try `/eden_particles_client play eden_particles:examples/vortex`.
 
+## Depending on it
+
+Releases are published to GitHub Packages. GitHub needs a token to read from it, even for public packages: create a personal access token with `read:packages` (and access to this repository while it's private), and put it in `~/.gradle/gradle.properties` as `gpr.user=<your GitHub name>` and `gpr.key=<token>`.
+
+```groovy
+repositories {
+    maven {
+        url = 'https://maven.pkg.github.com/ImEden6/eden-particles'
+        credentials {
+            username = findProperty('gpr.user') ?: System.getenv('GITHUB_ACTOR')
+            password = findProperty('gpr.key') ?: System.getenv('GITHUB_TOKEN')
+        }
+    }
+}
+
+dependencies {
+    // Fabric (Loom)
+    modImplementation 'com.eden.particles:eden_particles-fabric-1.21.1:0.1.0'
+    // NeoForge (ModDevGradle)
+    implementation 'com.eden.particles:eden_particles-neoforge-1.21.1:0.1.0'
+    // Forge (ForgeGradle)
+    implementation fg.deobf('com.eden.particles:eden_particles-forge-1.21.1:0.1.0')
+    // A multiloader common module (vanilla mappings)
+    compileOnly 'com.eden.particles:eden_particles-common-1.21.1:0.1.0'
+}
+```
+
+Players need the mod installed too.
+
 ## Project layout
 
 Built on [MultiLoader-Template](https://github.com/jaredlll08/MultiLoader-Template) (1.21.1 branch).
@@ -33,6 +62,17 @@ Run tasks: `:fabric:runClient` / `:fabric:runServer`, `:neoforge:runClient` / `:
 Dev servers need `eula.txt` accepted in their run directory, except NeoForge, which skips the check in development.
 
 Demo mode: add `-Pdemo=<effect id>` to a client run (for example `./gradlew :fabric:runClient -Pdemo=eden_particles:examples/vortex`) to replay that effect in front of you whenever nothing else is playing.
+
+## Releasing
+
+Set `version` in `gradle.properties`, commit, then tag and push it:
+
+```
+git tag v0.1.0
+git push origin v0.1.0
+```
+
+CI builds and tests as usual, and only then publishes all four artifacts. It refuses a tag that doesn't match `version`.
 
 ## Testing
 
