@@ -58,6 +58,7 @@ minecraft {
 
         // scripts/smoke-server.sh
         smokeServer {
+            parent runs.server
             workingDirectory file('runs/smoke')
             ideaModule "${rootProject.name}.${project.name}.main"
             taskName 'SmokeServer'
