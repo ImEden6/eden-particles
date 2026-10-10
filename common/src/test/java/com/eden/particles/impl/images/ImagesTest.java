@@ -59,16 +59,17 @@ class ImagesTest {
     void batchesStayWithinBudgetAndKeepOrder() {
         List<ImagePayloads.Image> images = new ArrayList<>();
         for (int i = 0; i < 20; i++) images.add(new ImagePayloads.Image(id("img" + i), new byte[300]));
-        List<ImagePayloads.Images> batches = ImageOffers.batches(images, 1000);
+        List<ImagePayloads.Images> batches = ImageOffers.batches(4, images, 1000);
         assertTrue(batches.size() > 1);
         List<ImagePayloads.Image> rejoined = new ArrayList<>();
         for (int i = 0; i < batches.size(); i++) {
             assertEquals(i == 0, batches.get(i).first());
             assertEquals(i == batches.size() - 1, batches.get(i).last());
+            assertEquals(4, batches.get(i).revision());
             rejoined.addAll(batches.get(i).images());
         }
         assertEquals(images, rejoined);
-        assertEquals(1, ImageOffers.batches(List.of(), 1000).size());
+        assertEquals(1, ImageOffers.batches(4, List.of(), 1000).size());
     }
 
     private static <T> T roundTrip(StreamCodec<RegistryFriendlyByteBuf, T> codec, T value) {
@@ -81,11 +82,15 @@ class ImagesTest {
 
     @Test
     void payloadsRoundTrip() {
-        ImagePayloads.Offer offer = new ImagePayloads.Offer(3, List.of(id("a"), id("b/c")), 12345L);
+        ImagePayloads.Offer offer = new ImagePayloads.Offer(3, List.of(
+                new ImagePayloads.Entry(id("a"), ImageHash.sha256(new byte[]{1}), 1),
+                new ImagePayloads.Entry(id("b/c"), ImageHash.sha256(new byte[]{2}), 12344)), 12345L);
         assertEquals(offer, roundTrip(ImagePayloads.Offer.STREAM_CODEC, offer));
-        ImagePayloads.Consent consent = new ImagePayloads.Consent(3, true);
+        assertEquals(List.of(id("a"), id("b/c")), offer.ids());
+        ImagePayloads.Consent consent = new ImagePayloads.Consent(3, true, List.of(0, 5, 511));
         assertEquals(consent, roundTrip(ImagePayloads.Consent.STREAM_CODEC, consent));
-        ImagePayloads.Images images = new ImagePayloads.Images(true, false, List.of(new ImagePayloads.Image(id("a"), png(4, 4, 50))));
+        assertEquals(ImagePayloads.Consent.decline(3), roundTrip(ImagePayloads.Consent.STREAM_CODEC, ImagePayloads.Consent.decline(3)));
+        ImagePayloads.Images images = new ImagePayloads.Images(3, true, false, List.of(new ImagePayloads.Image(id("a"), png(4, 4, 50))));
         assertEquals(images, roundTrip(ImagePayloads.Images.STREAM_CODEC, images));
     }
 }

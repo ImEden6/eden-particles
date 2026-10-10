@@ -18,11 +18,15 @@ final class ImageConsentScreen extends Screen {
     private MultiLineLabel label = MultiLineLabel.EMPTY;
     private boolean answered;
 
-    ImageConsentScreen(int count, long totalBytes, Consumer<Choice> onChoice) {
+    /** @param saved how many of the images are already saved from an earlier visit, so won't be downloaded */
+    ImageConsentScreen(int count, long totalBytes, int saved, long savedBytes, Consumer<Choice> onChoice) {
         super(Component.literal("Particle images from this server"));
+        String download = saved == 0 ? ""
+                : saved == count ? " All of them are already saved from an earlier visit."
+                : " " + saved + " are already saved, so " + Math.max(1, (totalBytes - savedBytes) / 1024) + " KiB would be downloaded.";
         this.message = Component.literal("This server wants to send " + count + (count == 1 ? " image" : " images")
                 + " (" + Math.max(1, totalBytes / 1024) + " KiB) for its Eden's Particles effects. "
-                + "They're only used by particles from this server.");
+                + "They're only used by particles from this server." + download);
         this.onChoice = onChoice;
     }
 

@@ -39,7 +39,7 @@ Put PNGs in `data/<namespace>/eden_particles/textures/` and use them like any sp
 | Count | up to 512 images |
 | Total | up to 8 MiB |
 
-Images are sent again after `/reload` only if they changed, without asking again.
+Players keep the images they receive in `eden_particles/image_cache/` in their game folder (up to 64 MiB, oldest first out), so when they rejoin, or after a `/reload`, only new or changed images are downloaded. A saved image is only reused for the server that sent it. Players are still asked before a server's images are used, whether or not they're saved.
 
 ### Alternative: a server resource pack
 
