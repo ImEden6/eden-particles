@@ -63,8 +63,9 @@ public record ParticleTemplate(
             template.speed.ifPresent(c -> curves.add("speed"));
             template.onDeath.ifPresent(c -> curves.add("on_death"));
             template.onLand.ifPresent(c -> curves.add("on_land"));
+            if (!template.physics.forces().isEmpty()) curves.add("physics.forces");
             if (!curves.isEmpty()) {
-                throw f.fail("vanilla particles can't follow per-particle curves or triggers; remove " + curves + " or use render type 'sprite'");
+                throw f.fail("vanilla particles can't follow per-particle curves, triggers or forces; remove " + curves + " or use render type 'sprite'");
             }
         }
         return template;

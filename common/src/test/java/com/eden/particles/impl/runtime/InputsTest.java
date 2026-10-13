@@ -55,7 +55,7 @@ class InputsTest {
     private static List<Spawn> tick(EffectInstance instance) {
         List<Spawn> spawns = new ArrayList<>();
         assertTrue(instance.prepare());
-        instance.tick((t, x, y, z, vx, vy, vz, life, scale, tint, variant, values) ->
+        instance.tick((t, x, y, z, vx, vy, vz, life, scale, tint, variant, values, frame) ->
                 spawns.add(new Spawn(x, y, z, vx, vy, vz, life, values.size, values.gravity)), 1f, 1f);
         return spawns;
     }
@@ -201,7 +201,7 @@ class InputsTest {
         List<Integer> tints = new ArrayList<>();
         List<Double> xs = new ArrayList<>();
         instance.prepare();
-        instance.tick((t, x, y, z, vx, vy, vz, life, scale, tint, variant, values) -> {
+        instance.tick((t, x, y, z, vx, vy, vz, life, scale, tint, variant, values, frame) -> {
             tints.add(tint);
             xs.add(x);
         }, 1f, 1f);

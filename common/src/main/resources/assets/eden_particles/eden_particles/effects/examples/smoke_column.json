@@ -1,0 +1,29 @@
+{
+  "duration": 100,
+  "loop": true,
+  "emitters": [
+    {
+      "duration": 100,
+      "template": {
+        "render": {
+          "type": "sprite",
+          "sprite": { "frames": ["minecraft:generic_7", "minecraft:generic_6", "minecraft:generic_5", "minecraft:generic_4",
+                                 "minecraft:generic_3", "minecraft:generic_2", "minecraft:generic_1", "minecraft:generic_0"] }
+        },
+        "lifetime": [70, 100],
+        "size": { "keys": [[0, 0.2], [1, 0.6]], "ease": "out_cubic" },
+        "alpha": [[0, 0.0], [0.1, 0.7], [0.7, 0.5], [1, 0.0]],
+        "color": [{ "t": 0, "color": "#BDB8B0" }, { "t": 1, "color": "#5E5A57" }],
+        "physics": {
+          "gravity": -0.05,
+          "drag": 0.94,
+          "forces": [{ "type": "turbulence", "strength": [[0, 0.002], [1, 0.012]], "scale": 1.5, "flow": 0.03 }]
+        }
+      },
+      "shape": { "type": "disc", "radius": 0.3 },
+      "spawn": { "rate": 1.5, "jitter": true },
+      "velocity": { "type": "cone", "half_angle": 8, "speed": [0.03, 0.06] },
+      "offset": [0, 0.2, 0]
+    }
+  ]
+}

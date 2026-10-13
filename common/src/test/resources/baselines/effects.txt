@@ -1,5 +1,11 @@
 # Spawn fingerprints of each effect, seeded and played for up to 400 ticks.
 # plain: default params; half: level-of-detail keep 0.5 (a subset of plain); transformed: scale, rotation, tint.
+eden_particles:examples/absorb half	ticks=400 attempts=1590 spawns=794 templates=2 hash=5e93c83d263c6275 box=[-2.50 62.00 -2.45 | 3.49 68.00 3.49] speed=0.0000 life=53.79
+eden_particles:examples/absorb plain	ticks=400 attempts=1590 spawns=1590 templates=2 hash=4ce4db024364e99f box=[-2.50 62.00 -2.50 | 3.50 68.00 3.49] speed=0.0000 life=54.41
+eden_particles:examples/absorb transformed	ticks=400 attempts=1607 spawns=1607 templates=2 hash=121d182e55bf037d box=[-3.80 60.97 -3.78 | 5.20 69.97 5.19] speed=0.0000 life=54.63
+eden_particles:examples/absorb_spark half	ticks=1 attempts=3 spawns=3 templates=1 hash=1f2ae0dae146a51a box=[0.50 64.00 0.50 | 0.50 64.00 0.50] speed=0.0601 life=10.67
+eden_particles:examples/absorb_spark plain	ticks=1 attempts=3 spawns=3 templates=1 hash=1f2ae0dae146a51a box=[0.50 64.00 0.50 | 0.50 64.00 0.50] speed=0.0601 life=10.67
+eden_particles:examples/absorb_spark transformed	ticks=1 attempts=3 spawns=3 templates=1 hash=5d4f7870a0821bad box=[0.50 64.00 0.50 | 0.50 64.00 0.50] speed=0.0854 life=13.67
 eden_particles:examples/arcane_burst half	ticks=60 attempts=295 spawns=151 templates=3 hash=8e466f481032eb84 box=[-1.34 64.10 -1.46 | 2.46 65.19 2.10] speed=0.1111 life=18.32
 eden_particles:examples/arcane_burst plain	ticks=60 attempts=295 spawns=295 templates=3 hash=007d07aefd88ddaf box=[-1.38 64.10 -1.46 | 2.46 65.20 2.44] speed=0.1040 life=18.62
 eden_particles:examples/arcane_burst transformed	ticks=60 attempts=291 spawns=291 templates=3 hash=95f8de9d7c6c6528 box=[-2.42 63.61 -2.43 | 3.39 65.77 3.42] speed=0.1556 life=18.63
@@ -18,6 +24,9 @@ eden_particles:examples/charge transformed	ticks=400 attempts=1800 spawns=1800 t
 eden_particles:examples/charge_release half	ticks=60 attempts=379 spawns=190 templates=4 hash=acd745a01c01e54e box=[-1.43 63.12 -1.32 | 2.44 66.87 2.42] speed=0.3048 life=17.16
 eden_particles:examples/charge_release plain	ticks=60 attempts=379 spawns=379 templates=4 hash=809bf1878a20e854 box=[-1.43 63.11 -1.42 | 2.44 66.91 2.42] speed=0.2911 life=17.20
 eden_particles:examples/charge_release transformed	ticks=60 attempts=374 spawns=374 templates=4 hash=057dce39c4b3ab5e box=[-2.27 62.51 -2.20 | 3.60 68.35 3.61] speed=0.4412 life=17.35
+eden_particles:examples/drain half	ticks=400 attempts=1190 spawns=587 templates=1 hash=2bdb1e3c3748446f box=[0.01 63.49 -0.01 | 1.00 64.52 1.02] speed=0.0500 life=100.00
+eden_particles:examples/drain plain	ticks=400 attempts=1190 spawns=1190 templates=1 hash=22b9e56c88955880 box=[-0.01 63.49 -0.02 | 1.00 64.52 1.02] speed=0.0500 life=100.00
+eden_particles:examples/drain transformed	ticks=400 attempts=1207 spawns=1207 templates=1 hash=fbe33452216b1f4c box=[-0.25 63.20 -0.28 | 1.25 64.76 1.28] speed=0.0750 life=100.00
 eden_particles:examples/firework half	ticks=30 attempts=3 spawns=3 templates=1 hash=4e6a042c4ad1bd24 box=[0.50 64.00 0.50 | 0.50 64.00 0.50] speed=0.6602 life=18.67
 eden_particles:examples/firework plain	ticks=30 attempts=3 spawns=3 templates=1 hash=4e6a042c4ad1bd24 box=[0.50 64.00 0.50 | 0.50 64.00 0.50] speed=0.6602 life=18.67
 eden_particles:examples/firework transformed	ticks=30 attempts=3 spawns=3 templates=1 hash=f3a5621131b19700 box=[0.50 64.00 0.50 | 0.50 64.00 0.50] speed=0.9808 life=21.67
@@ -36,12 +45,18 @@ eden_particles:examples/rain transformed	ticks=400 attempts=1200 spawns=1200 tem
 eden_particles:examples/shockwave half	ticks=2 attempts=97 spawns=51 templates=2 hash=3bdde2102c911807 box=[-0.62 64.00 -0.64 | 1.71 64.15 1.54] speed=0.6106 life=14.73
 eden_particles:examples/shockwave plain	ticks=2 attempts=97 spawns=97 templates=2 hash=6c3004b1150d4793 box=[-0.62 64.00 -0.64 | 1.71 64.15 1.60] speed=0.6480 life=14.33
 eden_particles:examples/shockwave transformed	ticks=2 attempts=97 spawns=97 templates=2 hash=6d9c4e54f53a5793 box=[-1.24 63.63 -1.67 | 2.91 64.38 2.63] speed=0.9637 life=14.74
+eden_particles:examples/smoke_column half	ticks=400 attempts=564 spawns=270 templates=1 hash=5985288e97b1011a box=[0.21 64.20 0.21 | 0.78 64.25 0.77] speed=0.0445 life=85.93
+eden_particles:examples/smoke_column plain	ticks=400 attempts=564 spawns=564 templates=1 hash=9d30800ccab278c8 box=[0.21 64.20 0.21 | 0.79 64.25 0.80] speed=0.0451 life=85.21
+eden_particles:examples/smoke_column transformed	ticks=400 attempts=612 spawns=612 templates=1 hash=09e59cb52608b5b7 box=[0.10 64.23 0.11 | 0.99 64.45 0.98] speed=0.0675 life=84.87
 eden_particles:examples/smoke_puff half	ticks=1 attempts=17 spawns=8 templates=1 hash=3bc42ad30d4518ad box=[0.31 64.12 0.25 | 0.77 64.63 0.65] speed=0.1225 life=38.50
 eden_particles:examples/smoke_puff plain	ticks=1 attempts=17 spawns=17 templates=1 hash=1f2d077252ef2220 box=[0.15 64.12 0.25 | 0.77 64.63 0.86] speed=0.1226 life=37.71
 eden_particles:examples/smoke_puff transformed	ticks=1 attempts=24 spawns=24 templates=1 hash=4c8021a23a796e93 box=[0.07 64.29 0.09 | 1.07 65.18 0.93] speed=0.1834 life=38.79
 eden_particles:examples/splash half	ticks=6 attempts=8 spawns=6 templates=1 hash=7450b61a294921bf box=[0.45 64.00 0.45 | 0.54 64.00 0.55] speed=0.0800 life=7.50
 eden_particles:examples/splash plain	ticks=6 attempts=8 spawns=8 templates=1 hash=3feb70f335eaf7cf box=[0.45 64.00 0.45 | 0.55 64.00 0.55] speed=0.0800 life=7.25
 eden_particles:examples/splash transformed	ticks=6 attempts=8 spawns=8 templates=1 hash=3e24ad483367bba4 box=[0.43 63.99 0.43 | 0.57 64.01 0.57] speed=0.1200 life=8.13
+eden_particles:examples/tornado half	ticks=400 attempts=2415 spawns=1201 templates=1 hash=6f0bfd06f493aee6 box=[-1.95 64.00 -1.97 | 2.95 64.00 2.99] speed=0.0000 life=79.94
+eden_particles:examples/tornado plain	ticks=400 attempts=2415 spawns=2415 templates=1 hash=cbc60ed2a5ce6fc8 box=[-1.97 64.00 -1.99 | 2.96 64.00 3.00] speed=0.0000 life=79.92
+eden_particles:examples/tornado transformed	ticks=400 attempts=2371 spawns=2371 templates=1 hash=ed9c78d4bbbe317c box=[-3.20 63.31 -3.19 | 4.20 64.69 4.17] speed=0.0000 life=79.99
 eden_particles:examples/vortex half	ticks=80 attempts=1000 spawns=502 templates=3 hash=5595bdf5ac7b9791 box=[-2.05 62.27 -2.17 | 3.30 67.67 3.16] speed=0.1182 life=27.81
 eden_particles:examples/vortex plain	ticks=80 attempts=1000 spawns=1000 templates=3 hash=f629fc795f440d11 box=[-2.20 62.27 -2.38 | 3.32 67.75 3.29] speed=0.1192 life=27.91
 eden_particles:examples/vortex transformed	ticks=80 attempts=1000 spawns=1000 templates=3 hash=1250cd5d3d7fd890 box=[-3.71 61.39 -3.49 | 5.07 69.75 4.81] speed=0.1790 life=27.78

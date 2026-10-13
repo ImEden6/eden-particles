@@ -17,6 +17,8 @@ public final class TemplateValues {
     public float landChance;
     public float[] deathInputs = EMPTY;
     public float[] landInputs = EMPTY;
+    /** See {@link BakedForces#evaluate}. */
+    public float[] forces = EMPTY;
 
     private static final float[] EMPTY = new float[0];
 

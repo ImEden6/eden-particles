@@ -266,6 +266,7 @@ Curves on a template run over the particle's own life, from `t = 0` (spawn) to `
 | `physics.gravity` | `0` | `1` is vanilla's normal pull. Negative values float upward. |
 | `physics.drag` | `0.98` | Speed kept each tick (vanilla's friction). `0.9` stops quickly, `1` never slows down. |
 | `physics.collide` | `false` | Bounces off blocks. Costs more, so leave it off unless you need it. |
+| `physics.forces` | none | Up to 8 pushes applied each tick. Sprite templates only. See [Forces](#forces). |
 | `on_death` | none | Plays an effect when a particle dies. Sprite templates only. See [On death and on landing](#on-death-and-on-landing). |
 | `on_land` | none | Plays an effect the first time a particle touches a block. Sprite templates only, and needs `physics.collide`. See [On death and on landing](#on-death-and-on-landing). |
 
@@ -288,6 +289,91 @@ Curves on a template run over the particle's own life, from `t = 0` (spawn) to `
 - `mode` is `over_life` by default. `ticks_per_frame` only applies to `loop`.
 - A **sheet** is read left to right, top to bottom. `count` defaults to `columns × rows`; use it when the last row isn't full. Up to 64 frames in a list, 256 in a sheet.
 - Frames can be resource-pack sprites (including vanilla ones such as `minecraft:generic_0` … `minecraft:generic_7`) or datapack images, but not a mix of both in one sprite.
+
+## Forces
+
+A force pushes particles every tick. Forces go in a template's `physics` as a list of up to 8:
+
+```json
+"physics": {
+  "drag": 0.96,
+  "forces": [
+    { "type": "turbulence", "strength": 0.01, "scale": 2, "flow": 0.02 },
+    { "type": "attractor", "point": [0, 1, 0], "strength": 0.05, "falloff": "inverse_square", "absorb": 0.2 }
+  ]
+}
+```
+
+These rules apply to every force:
+
+- Each tick a force adds an acceleration to the particle's velocity, after gravity and before drag. Units are blocks per tick², scaled by the effect's `scale` like gravity. With `drag` below 1, a steady force settles to a top speed of roughly `strength / (1 − drag)`.
+- Only `sprite` render templates can have forces. A `vanilla` template with forces fails to load, the same as size and alpha curves and `on_death`.
+- `strength` is a curve over the particle's life, like `size` and `alpha`: a number, an expression, a key list, or an object with `keys` and `scale`.
+- Expressions in a force are evaluated when the particle spawns, using the effect's inputs at that moment. Changing an input later affects new particles only.
+- Points and lengths (`point`, `radius`, `absorb`, turbulence `scale`) are in the effect's space. They follow the anchor as it moves, turn with its facing and grow with its scale. When the effect ends, its leftover particles keep the last position.
+
+### Turbulence
+
+Turbulence swirls particles with smooth, curl-style noise. The field has no sources or sinks, so particles swirl like smoke without bunching into clumps.
+
+| Field | Default | |
+|---|---|---|
+| `strength` | required | Curve. Roughly the average push. |
+| `scale` | `1` | Size of the swirls, in blocks. Must be above 0. |
+| `flow` | `0` | How fast the pattern drifts, in blocks per tick. |
+| `octaves` | `1` | `1` or `2`. `2` adds finer detail at about twice the cost. |
+
+- The pattern is fixed in the world. It doesn't turn with the effect, but the effect's seed offsets it on each play, so two plays swirl differently.
+- Turbulence is the most expensive force, about five times an attractor. Prefer it on effects with moderate particle counts.
+
+### Attractor
+
+An attractor pulls particles toward `point`. A negative `strength` pushes them away.
+
+| Field | Default | |
+|---|---|---|
+| `point` | `"origin"` | Where the pull is aimed. See [Points](#points). |
+| `strength` | required | Curve. Negative pushes away. |
+| `falloff` | `"none"` | How the force weakens with distance, see below. |
+| `radius` | `0` | Past this distance there's no push. `0` means no limit. |
+| `absorb` | `0` | Distance at which the particle dies. Its `on_death` fires, which suits "absorbed" sparkles. |
+
+Falloff:
+
+- `none`: the same push at any distance.
+- `linear`: fades to 0 at `radius`. Needs a `radius`.
+- `inverse_square`: `strength` is the push at 1 block. Anything closer counts as 0.5 blocks, so it never blows up.
+
+### Vortex
+
+A vortex spins particles around an axis that runs through `point`.
+
+| Field | Default | |
+|---|---|---|
+| `point` | `"origin"` | A point on the axis. See [Points](#points). |
+| `axis` | `[0, 1, 0]` | Direction of the axis, in effect space. Can't be all zeros. |
+| `strength` | required | Curve. Spin around the axis. Positive is counter-clockwise seen from the axis tip, which is from above for the default axis. |
+| `pull` | `0` | Acceleration toward the axis. Negative pushes out. |
+| `lift` | `0` | Acceleration along the axis. |
+| `falloff` | `"none"` | As for attractors, measured from the axis. |
+| `radius` | `0` | As for attractors, measured from the axis. |
+
+Spin alone makes particles spiral outward. A little `pull` keeps them circling.
+
+### Points
+
+`point` is one of:
+
+- `[x, y, z]`: an offset from the effect's origin, in effect space.
+- `"origin"`: the effect's origin. The default.
+- `"target"`: the far end of a `between` anchor. See [Anchors](api.md#anchors) in the API docs.
+
+The bundled examples show each type:
+
+- `eden_particles:examples/smoke_column`: turbulence.
+- `eden_particles:examples/absorb`: an attractor with `absorb` and `on_death`.
+- `eden_particles:examples/drain`: a beam whose particles spawn at the far end and are pulled back to `"origin"`. Play it with `/eden_particles beam`.
+- `eden_particles:examples/tornado`: a vortex with `pull` and `lift`.
 
 ## Curves
 
@@ -337,6 +423,7 @@ Values rolled once per particle (speeds, lifetimes, burst counts):
 - The vanilla *Particles* setting scales spawns: *All* keeps everything, *Decreased* keeps 2/3, *Minimal* keeps none (except `important` emitters, which keep 1/15). Lower settings show a subset of the same particles, so the effect thins out rather than changing shape.
 - Every client that sees a server-started effect gets the same random pattern.
 - Total spawning is capped per tick. Past the cap, every effect thins out proportionally.
+- Attractors and vortices are cheap. Turbulence costs several times the rest of a particle's tick, and `octaves: 2` doubles that.
 - Vanilla holds at most 16,384 live particles per drawing style, and past that it deletes the oldest. Eden keeps below that limit by spawning fewer new particles as space runs out, so particles already on screen never vanish early.
 - `/eden_particles_client bench <effect> [count]` plays an effect on a grid and reports Eden's own tick cost.
 

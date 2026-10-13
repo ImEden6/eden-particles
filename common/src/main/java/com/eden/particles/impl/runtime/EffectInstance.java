@@ -47,6 +47,7 @@ public final class EffectInstance {
     private final Quaternionf rotation = new Quaternionf();
     private int tint;
     private final Anchor.Placement placement = new Anchor.Placement();
+    private final EffectFrame effectFrame;
     private final Quaternionf base = new Quaternionf();
     private final Vector3d current = new Vector3d();
     private final Vector3d previous = new Vector3d();
@@ -71,6 +72,7 @@ public final class EffectInstance {
         this.rotation.set(params.rotation());
         this.tint = params.tint();
         this.seed = params.seed();
+        this.effectFrame = new EffectFrame(params.seed());
         this.children = new EffectInstance[effect.subEffects().size()];
         this.startedLoop = new int[children.length];
         Arrays.fill(startedLoop, -1);
@@ -97,6 +99,9 @@ public final class EffectInstance {
             previous.set(current);
             hasPrevious = true;
         }
+        effectFrame.position.set(current);
+        effectFrame.facing.set(base);
+        placement.facing.transform(effectFrame.target.set(0, 0, placement.distance)).add(current);
         return true;
     }
 
@@ -205,6 +210,7 @@ public final class EffectInstance {
         } else {
             age = ticks;
         }
+        effectFrame.ticks = ticks;
     }
 
     /**
@@ -255,6 +261,7 @@ public final class EffectInstance {
 
         previous.set(current);
         age++;
+        effectFrame.ticks++;
         if (age >= effect.duration()) {
             stopChildren();
             if (effect.definition().loop()) {
@@ -296,7 +303,7 @@ public final class EffectInstance {
         double x = previous.x + (current.x - previous.x) * tau + offset.x + position.x + direction.x * advance;
         double y = previous.y + (current.y - previous.y) * tau + offset.y + position.y + direction.y * advance;
         double z = previous.z + (current.z - previous.z) * tau + offset.z + position.z + direction.z * advance;
-        sink.spawn(template, x, y, z, direction.x, direction.y, direction.z, lifetime, scale, tint, variant, state.values);
+        sink.spawn(template, x, y, z, direction.x, direction.y, direction.z, lifetime, scale, tint, variant, state.values, effectFrame);
     }
 
     private void sampleShape(EmitterShape shape, float radius, boolean even, int index, int count, float phase) {

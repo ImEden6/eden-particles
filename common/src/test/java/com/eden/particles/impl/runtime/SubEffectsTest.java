@@ -87,7 +87,7 @@ class SubEffectsTest {
                 EffectInstance instance = active.get(i);
                 if (!instance.prepare()) continue;
                 List<double[]> at = spawns.computeIfAbsent(instance, k -> new ArrayList<>());
-                instance.tick((t, x, y, z, vx, vy, vz, life, scale, tint, variant, values) -> at.add(new double[]{x, z}), 1f, 1f);
+                instance.tick((t, x, y, z, vx, vy, vz, life, scale, tint, variant, values, frame) -> at.add(new double[]{x, z}), 1f, 1f);
             }
             active.removeIf(EffectInstance::isFinished);
             tick++;
@@ -237,7 +237,7 @@ class SubEffectsTest {
         EffectInstance fx = host.start(id("fx"), Anchor.fixed(0, 0, 0), PlayParams.of(1));
         List<TemplateValues> seen = new ArrayList<>();
         fx.prepare();
-        fx.tick((t, x, y, z, vx, vy, vz, life, scale, tint, variant, values) -> {
+        fx.tick((t, x, y, z, vx, vy, vz, life, scale, tint, variant, values, frame) -> {
             assertTrue(t.onDeath().isPresent() && t.onLand().isPresent());
             TemplateValues copy = new TemplateValues();
             copy.deathChance = values.deathChance;

@@ -1,12 +1,19 @@
 package com.eden.particles.bench;
 
 import com.eden.particles.impl.TestDefinitions;
+import com.eden.particles.impl.definition.Force;
+import com.eden.particles.impl.expr.InputNames;
 import com.eden.particles.impl.runtime.Anchor;
 import com.eden.particles.impl.runtime.BakedEffect;
+import com.eden.particles.impl.runtime.BakedForces;
+import com.eden.particles.impl.runtime.EffectFrame;
 import com.eden.particles.impl.runtime.EffectInstance;
+import com.eden.particles.impl.runtime.ParticleForces;
 import com.eden.particles.impl.runtime.PlayParams;
 import com.eden.particles.impl.runtime.SpawnSink;
 import com.eden.particles.testing.Baselines;
+import com.google.gson.JsonParser;
+import com.mojang.serialization.JsonOps;
 import net.minecraft.resources.ResourceLocation;
 
 import java.io.IOException;
@@ -27,6 +34,20 @@ import java.util.function.LongSupplier;
 public final class RuntimeBench {
 
     private static final int INSTANCES = 32;
+    private static final int PARTICLES = 15_000;
+    private static final Map<String, String> FORCE_MIXES = new LinkedHashMap<>();
+
+    static {
+        String turbulence = "{\"type\": \"turbulence\", \"strength\": 0.02, \"scale\": 2, \"flow\": 0.02}";
+        String attractor = "{\"type\": \"attractor\", \"point\": [0, 1, 0], \"strength\": 0.02, \"falloff\": \"inverse_square\"}";
+        String vortex = "{\"type\": \"vortex\", \"strength\": 0.03, \"pull\": 0.01, \"lift\": 0.01, \"falloff\": \"linear\", \"radius\": 12}";
+        FORCE_MIXES.put("none", "[]");
+        FORCE_MIXES.put("turbulence", "[" + turbulence + "]");
+        FORCE_MIXES.put("turbulence_2_octaves", "[" + turbulence.replace("}", ", \"octaves\": 2}") + "]");
+        FORCE_MIXES.put("attractor", "[" + attractor + "]");
+        FORCE_MIXES.put("vortex", "[" + vortex + "]");
+        FORCE_MIXES.put("all", "[" + turbulence + ", " + attractor + ", " + vortex + "]");
+    }
     private static final long WARMUP_NANOS = 1_500_000_000L;
     private static final long SAMPLE_NANOS = 300_000_000L;
     private static final int SAMPLES = 7;
@@ -34,7 +55,8 @@ public final class RuntimeBench {
             Runtime benchmark medians from ./gradlew :common:bench, on the machine that last ran -PupdateBaselines.
             tick: %d instances of the effect ticking together (restarted when they end); ns per effect tick and per spawn.
             load: parsing, linking and baking every bundled example.
-            """.formatted(INSTANCES);
+            motion: %d particles moved under each force mix; ns per particle tick (forces, gravity, drag and the move).
+            """.formatted(INSTANCES, PARTICLES);
 
     private static double blackhole;
 
@@ -47,6 +69,7 @@ public final class RuntimeBench {
         for (Map.Entry<ResourceLocation, BakedEffect> entry : TestDefinitions.load(TestDefinitions.BUNDLED).baked().entrySet()) {
             results.put("tick " + entry.getKey().getPath(), tickCase(entry.getValue()));
         }
+        FORCE_MIXES.forEach((name, json) -> results.put("motion " + name, Map.of("ns_per_particle", motionCase(json))));
         if (blackhole == 42) System.out.println();
 
         Map<String, String> lines = new LinkedHashMap<>();
@@ -79,7 +102,7 @@ public final class RuntimeBench {
 
     private static Map<String, Double> tickCase(BakedEffect effect) {
         long[] spawns = new long[1];
-        SpawnSink sink = (t, x, y, z, vx, vy, vz, life, scale, tint, variant, values) -> {
+        SpawnSink sink = (t, x, y, z, vx, vy, vz, life, scale, tint, variant, values, frame) -> {
             blackhole += x + vy;
             spawns[0]++;
         };
@@ -116,6 +139,44 @@ public final class RuntimeBench {
         metrics.put("ns_per_tick", median(perTick));
         metrics.put("ns_per_spawn", median(perSpawn));
         return metrics;
+    }
+
+    /** Moves particles the way EdenParticle does, without collision, and times it per particle tick. */
+    private static double motionCase(String json) {
+        BakedForces forces = BakedForces.bake(Force.LIST.parse(JsonOps.INSTANCE, JsonParser.parseString(json)).getOrThrow());
+        float[] values = forces.evaluate(new float[InputNames.count()]);
+        EffectFrame frame = new EffectFrame(1);
+        double[] state = new double[PARTICLES * 6];
+        ParticleForces[] particles = new ParticleForces[PARTICLES];
+        java.util.SplittableRandom random = new java.util.SplittableRandom(1);
+        for (int i = 0; i < PARTICLES; i++) {
+            for (int k = 0; k < 3; k++) state[i * 6 + k] = random.nextDouble(-8, 8);
+            particles[i] = forces.isEmpty() ? null : new ParticleForces(forces, values, frame, 1f);
+        }
+        int[] age = {0};
+        LongSupplier round = () -> {
+            long begin = System.nanoTime();
+            int a = age[0]++ % 40;
+            for (int i = 0; i < PARTICLES; i++) {
+                int o = i * 6;
+                ParticleForces p = particles[i];
+                state[o + 4] -= 0.04 * 0.1;
+                if (p != null && p.accelerate(state[o], state[o + 1], state[o + 2], a, a / 40f)) {
+                    state[o + 3] += p.ax;
+                    state[o + 4] += p.ay;
+                    state[o + 5] += p.az;
+                }
+                for (int k = 0; k < 3; k++) {
+                    state[o + k] += state[o + 3 + k];
+                    state[o + 3 + k] *= 0.96;
+                }
+            }
+            frame.ticks++;
+            return System.nanoTime() - begin;
+        };
+        double perRound = measure(round);
+        blackhole += state[0];
+        return perRound / PARTICLES;
     }
 
     private static EffectInstance start(BakedEffect effect, long seed) {

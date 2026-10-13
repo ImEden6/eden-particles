@@ -100,7 +100,7 @@ class DefinitionErrorTest {
     void vanillaParticlesRejectCurves() {
         String error = Json.error(ParticleTemplate.CODEC,
                 "{\"render\": {\"type\": \"vanilla\", \"particle\": \"minecraft:flame\"}, \"lifetime\": 10, \"size\": 0.2, \"alpha\": [[0, 1], [1, 0]]}");
-        assertEquals("vanilla particles can't follow per-particle curves or triggers; remove [size, alpha] or use render type 'sprite'", error);
+        assertEquals("vanilla particles can't follow per-particle curves, triggers or forces; remove [size, alpha] or use render type 'sprite'", error);
     }
 
     @Test

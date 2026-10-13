@@ -4,6 +4,8 @@ import com.eden.particles.impl.definition.RenderMode;
 import com.eden.particles.impl.definition.SpriteRef;
 import com.eden.particles.impl.definition.Trigger;
 import com.eden.particles.impl.runtime.BakedTemplate;
+import com.eden.particles.impl.runtime.EffectFrame;
+import com.eden.particles.impl.runtime.ParticleForces;
 import com.eden.particles.impl.runtime.Triggers;
 import com.eden.particles.impl.runtime.TemplateValues;
 import com.mojang.blaze3d.vertex.VertexConsumer;
@@ -13,7 +15,7 @@ import net.minecraft.client.particle.ParticleRenderType;
 import net.minecraft.client.particle.TextureSheetParticle;
 import net.minecraft.client.renderer.LightTexture;
 
-/** Follows its template's size, alpha, colour, speed and sprite-frame curves over its life. */
+/** Follows its template's size, alpha, colour, speed and sprite-frame curves over its life, and its forces. */
 public final class EdenParticle extends TextureSheetParticle {
 
     private final BakedTemplate template;
@@ -36,10 +38,11 @@ public final class EdenParticle extends TextureSheetParticle {
     private final float[] deathInputs;
     private final float[] landInputs;
     private boolean landed;
+    private final ParticleForces forces;
 
     EdenParticle(ClientLevel level, double x, double y, double z, double vx, double vy, double vz,
                  BakedTemplate template, RenderMode.Sprite render, ResolvedSprite resolved,
-                 int lifetime, float scale, int tint, float variant, TemplateValues values) {
+                 int lifetime, float scale, int tint, float variant, TemplateValues values, EffectFrame effectFrame) {
         // The 4-argument constructor; the 7-argument one randomizes the velocity.
         super(level, x, y, z);
         this.template = template;
@@ -64,6 +67,7 @@ public final class EdenParticle extends TextureSheetParticle {
         this.gravity = values.gravity * scale;
         this.friction = values.drag;
         this.hasPhysics = template.physics().collide();
+        this.forces = template.forces().isEmpty() ? null : new ParticleForces(template.forces(), values.forces, effectFrame, scale);
         this.tintR = ((tint >> 16) & 0xFF) / 255f;
         this.tintG = ((tint >> 8) & 0xFF) / 255f;
         this.tintB = (tint & 0xFF) / 255f;
@@ -80,12 +84,20 @@ public final class EdenParticle extends TextureSheetParticle {
         yo = y;
         zo = z;
         if (age++ >= lifetime) {
-            if (onDeath != null) fire(onDeath, Triggers.DEATH_SALT, deathChance, deathInputs);
-            remove();
+            die();
             return;
         }
         frame = spriteRef.frameAt(age, lifetime, variant);
         yd -= 0.04 * gravity;
+        if (forces != null) {
+            if (!forces.accelerate(x, y, z, age, age / (float) lifetime)) {
+                die();
+                return;
+            }
+            xd += forces.ax;
+            yd += forces.ay;
+            zd += forces.az;
+        }
         float s = template.speed().curve().sample(age / (float) lifetime) * speedScale;
         move(xd * s, yd * s, zd * s);
         xd *= friction;
@@ -99,6 +111,11 @@ public final class EdenParticle extends TextureSheetParticle {
             xd *= 0.7;
             zd *= 0.7;
         }
+    }
+
+    private void die() {
+        if (onDeath != null) fire(onDeath, Triggers.DEATH_SALT, deathChance, deathInputs);
+        remove();
     }
 
     private void fire(Trigger trigger, long salt, float chance, float[] inputs) {

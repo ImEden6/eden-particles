@@ -1,0 +1,11 @@
+{
+  "duration": 1,
+  "emitters": [
+    {
+      "duration": 1,
+      "template": "eden_particles:examples/shock_spark",
+      "spawn": { "bursts": [{ "at": 0, "count": 3 }] },
+      "velocity": { "type": "radial", "speed": [0.03, 0.08] }
+    }
+  ]
+}

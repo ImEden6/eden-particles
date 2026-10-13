@@ -1,0 +1,28 @@
+{
+  "duration": 20,
+  "loop": true,
+  "emitters": [
+    {
+      "name": "drops",
+      "duration": 20,
+      "template": {
+        "render": { "type": "sprite", "sprite": "eden_particles:glow", "blend": "additive", "emissive": true },
+        "lifetime": 100,
+        "size": [[0, 0.22], [1, 0.1]],
+        "alpha": [[0, 0.0], [0.05, 0.8], [1, 0.8]],
+        "color": [{ "t": 0, "color": "#FF4D4D" }, { "t": 1, "color": "#B3002D" }],
+        "physics": {
+          "drag": 0.88,
+          "forces": [
+            { "type": "attractor", "point": "origin", "strength": 0.04, "absorb": 0.4 },
+            { "type": "turbulence", "strength": 0.01, "scale": 1.2, "flow": 0.05 }
+          ]
+        }
+      },
+      "shape": { "type": "sphere", "radius": 0.5 },
+      "spawn": { "rate": 3, "jitter": true },
+      "velocity": { "type": "radial", "speed": 0.05 },
+      "offset": [0, 0, "distance"]
+    }
+  ]
+}

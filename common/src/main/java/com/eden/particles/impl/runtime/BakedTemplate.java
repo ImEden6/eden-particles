@@ -20,6 +20,7 @@ public record BakedTemplate(
         BakedScaledCurve speed,
         BakedGradient color,
         Physics physics,
+        BakedForces forces,
         Optional<Trigger> onDeath,
         Optional<Trigger> onLand) {
 
@@ -32,6 +33,7 @@ public record BakedTemplate(
                 BakedScaledCurve.bake(template.speed().orElse(ScaledCurve.constant(1.0))),
                 template.color().orElse(Gradient.constant(0xFFFFFF)).bake(),
                 template.physics(),
+                BakedForces.bake(template.physics().forces()),
                 template.onDeath(),
                 template.onLand());
     }
@@ -42,6 +44,7 @@ public record BakedTemplate(
         out.speed = speed.scale(inputs);
         out.gravity = physics.gravity().eval(inputs);
         out.drag = Physics.clampDrag(physics.drag().eval(inputs));
+        if (!forces.isEmpty()) out.forces = forces.evaluate(inputs);
         onDeath.ifPresent(t -> {
             out.deathChance = t.chance().eval(inputs);
             out.deathInputs = TemplateValues.evaluate(t, inputs);

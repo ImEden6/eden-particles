@@ -1,6 +1,6 @@
 # Eden's Particles
 
-Data-driven, choreographed particle effects for Minecraft 1.21.1, for mod developers. Effects are JSON timelines of emitters, with curves that animate size, colour, opacity, spawn rate and more over time.
+Data-driven, choreographed particle effects for Minecraft 1.21.1, for mod developers. Effects are JSON timelines of emitters, with curves that animate size, colour, opacity, spawn rate and more over time, plus forces (turbulence, attractors, vortices) that push particles around.
 
 Supports Fabric, NeoForge and Forge.
 

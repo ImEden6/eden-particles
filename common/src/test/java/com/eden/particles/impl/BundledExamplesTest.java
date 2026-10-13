@@ -22,7 +22,7 @@ class BundledExamplesTest {
     void everyExampleLoadsAndSpawns() {
         TestDefinitions.Loaded loaded = TestDefinitions.load(TestDefinitions.BUNDLED);
         assertTrue(loaded.report().errors().isEmpty(), loaded.report().errors().toString());
-        assertEquals(15, loaded.report().effects(), loaded.store().effectIds().toString());
+        assertEquals(20, loaded.report().effects(), loaded.store().effectIds().toString());
 
         for (Map.Entry<ResourceLocation, BakedEffect> entry : loaded.baked().entrySet()) {
             ResourceLocation id = entry.getKey();
@@ -40,7 +40,7 @@ class BundledExamplesTest {
                     EffectInstance instance = active.get(i);
                     instance.setHost(host);
                     if (!instance.prepare()) continue;
-                    spawned += instance.tick((t, x, y, z, vx, vy, vz, life, scale, tint, variant, values) -> {
+                    spawned += instance.tick((t, x, y, z, vx, vy, vz, life, scale, tint, variant, values, frame) -> {
                         assertTrue(Double.isFinite(x) && Double.isFinite(y) && Double.isFinite(z), id + " spawned at a non-finite position");
                         assertTrue(Double.isFinite(vx) && Double.isFinite(vy) && Double.isFinite(vz), id + " has a non-finite velocity");
                         assertTrue(life >= 1, id + " lifetime " + life);
