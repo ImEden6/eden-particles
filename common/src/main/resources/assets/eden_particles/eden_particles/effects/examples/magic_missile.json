@@ -1,0 +1,14 @@
+{
+  "duration": 40,
+  "emitters": [
+    {
+      "name": "missile",
+      "duration": 30,
+      "template": "eden_particles:examples/magic_missile",
+      "shape": { "type": "disc", "radius": 0.4 },
+      "spawn": { "rate": 3 },
+      "velocity": { "type": "fixed", "direction": [0, 0.2, 1.0], "speed": [0.6, 0.9] },
+      "important": true
+    }
+  ]
+}

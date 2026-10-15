@@ -2,5 +2,6 @@
 # moved without collision for up to 200 ticks. absorbed: removed by an attractor.
 eden_particles:examples/absorb	particles=171 absorbed=131 mean=[0.52 65.00 0.48] hash=d88e8417e8e1f2e4
 eden_particles:examples/drain	particles=131 absorbed=131 mean=[0.55 63.97 0.67] hash=ee8fd6a3bbf8742c
+eden_particles:examples/magic_missile	particles=90 absorbed=0 mean=[0.51 66.10 11.23] hash=ae5523366d0039de
 eden_particles:examples/smoke_column	particles=71 absorbed=0 mean=[0.41 67.20 0.99] hash=f684cd748517576c
 eden_particles:examples/tornado	particles=247 absorbed=0 mean=[0.66 69.68 0.42] hash=35ac2c3839a007ea

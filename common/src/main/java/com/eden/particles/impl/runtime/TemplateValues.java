@@ -10,6 +10,8 @@ public final class TemplateValues {
     public float size = 1f;
     public float alpha = 1f;
     public float speed = 1f;
+    public float trailWidth = 1f;
+    public float trailAlpha = 1f;
     public float gravity;
     public float drag = 0.98f;
     /** Trigger chances and input values; a new array each evaluation, so particles can keep them. */

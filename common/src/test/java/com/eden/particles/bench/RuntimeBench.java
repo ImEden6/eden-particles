@@ -3,6 +3,8 @@ package com.eden.particles.bench;
 import com.eden.particles.impl.TestDefinitions;
 import com.eden.particles.impl.definition.Force;
 import com.eden.particles.impl.expr.InputNames;
+import com.eden.particles.impl.math.RibbonMath;
+import com.eden.particles.impl.math.TrailHistory;
 import com.eden.particles.impl.runtime.Anchor;
 import com.eden.particles.impl.runtime.BakedEffect;
 import com.eden.particles.impl.runtime.BakedForces;
@@ -70,6 +72,7 @@ public final class RuntimeBench {
             results.put("tick " + entry.getKey().getPath(), tickCase(entry.getValue()));
         }
         FORCE_MIXES.forEach((name, json) -> results.put("motion " + name, Map.of("ns_per_particle", motionCase(json))));
+        results.put("trail ribbon", Map.of("ns_per_particle", trailCase()));
         if (blackhole == 42) System.out.println();
 
         Map<String, String> lines = new LinkedHashMap<>();
@@ -177,6 +180,32 @@ public final class RuntimeBench {
         double perRound = measure(round);
         blackhole += state[0];
         return perRound / PARTICLES;
+    }
+
+    private static double trailCase() {
+        int particles = 15_000;
+        TrailHistory[] histories = new TrailHistory[particles];
+        for (int i = 0; i < particles; i++) {
+            histories[i] = new TrailHistory(24, 0.05f);
+            for (int k = 0; k < 20; k++) {
+                histories[i].record(k * 0.1f, k * 0.05f, 0f, k);
+            }
+        }
+
+        int[] step = {0};
+        LongSupplier round = () -> {
+            long begin = System.nanoTime();
+            int s = step[0]++;
+            for (int i = 0; i < particles; i++) {
+                TrailHistory th = histories[i];
+                th.record(s * 0.1f + i * 0.01f, (s + i) * 0.05f, 0f, s);
+                th.pruneOlderThan(s, 20);
+                blackhole += th.size();
+            }
+            return System.nanoTime() - begin;
+        };
+        double perRound = measure(round);
+        return perRound / particles;
     }
 
     private static EffectInstance start(BakedEffect effect, long seed) {

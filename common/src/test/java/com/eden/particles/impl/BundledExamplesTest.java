@@ -22,7 +22,7 @@ class BundledExamplesTest {
     void everyExampleLoadsAndSpawns() {
         TestDefinitions.Loaded loaded = TestDefinitions.load(TestDefinitions.BUNDLED);
         assertTrue(loaded.report().errors().isEmpty(), loaded.report().errors().toString());
-        assertEquals(20, loaded.report().effects(), loaded.store().effectIds().toString());
+        assertEquals(23, loaded.report().effects(), loaded.store().effectIds().toString());
 
         for (Map.Entry<ResourceLocation, BakedEffect> entry : loaded.baked().entrySet()) {
             ResourceLocation id = entry.getKey();

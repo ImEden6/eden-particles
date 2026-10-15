@@ -1,0 +1,14 @@
+{
+  "duration": 15,
+  "emitters": [
+    {
+      "name": "sparks",
+      "duration": 1,
+      "template": "eden_particles:examples/spark_trail",
+      "shape": { "type": "point" },
+      "spawn": { "bursts": [{ "count": [16, 24] }] },
+      "velocity": { "type": "radial", "speed": [0.8, 1.5] },
+      "important": true
+    }
+  ]
+}

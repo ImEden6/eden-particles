@@ -1,0 +1,25 @@
+{
+  "render": {
+    "type": "sprite",
+    "sprite": "eden_particles:spark",
+    "blend": "additive",
+    "emissive": true
+  },
+  "lifetime": [12, 18],
+  "size": 0.18,
+  "trail": {
+    "lifetime": 10,
+    "max_points": 20,
+    "min_distance": 0.06,
+    "width": { "keys": [{ "t": 0, "v": 0.16 }, { "t": 1, "v": 0.0, "ease": "out_quad" }] },
+    "alpha": { "keys": [{ "t": 0, "v": 0.8 }, { "t": 1, "v": 0.0 }] },
+    "color": { "keys": [{ "t": 0, "color": "#FFE082" }, { "t": 1, "color": "#FF6D00" }], "space": "oklab" },
+    "mode": "stretch",
+    "blend": "additive",
+    "emissive": true
+  },
+  "physics": {
+    "gravity": 0.06,
+    "drag": 0.94
+  }
+}

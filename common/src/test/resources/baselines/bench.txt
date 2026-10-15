@@ -2,30 +2,34 @@
 # tick: 32 instances of the effect ticking together (restarted when they end); ns per effect tick and per spawn.
 # load: parsing, linking and baking every bundled example.
 # motion: 15000 particles moved under each force mix; ns per particle tick (forces, gravity, drag and the move).
-load	ms=4.4
-motion all	ns_per_particle=155.1
-motion attractor	ns_per_particle=25.3
-motion none	ns_per_particle=1.7
-motion turbulence	ns_per_particle=116.7
-motion turbulence_2_octaves	ns_per_particle=206.2
-motion vortex	ns_per_particle=25.5
-tick examples/absorb	ns_per_tick=323.8 ns_per_spawn=80.9
-tick examples/absorb_spark	ns_per_tick=315.5 ns_per_spawn=105.2
-tick examples/arcane_burst	ns_per_tick=490.1 ns_per_spawn=104.3
-tick examples/beam	ns_per_tick=202.2 ns_per_spawn=134.8
-tick examples/breath	ns_per_tick=796.3 ns_per_spawn=99.5
-tick examples/campfire_smoke	ns_per_tick=104.1 ns_per_spawn=260.4
-tick examples/charge	ns_per_tick=481.2 ns_per_spawn=106.9
-tick examples/charge_release	ns_per_tick=20.8 ns_per_spawn=0.0
-tick examples/drain	ns_per_tick=394.8 ns_per_spawn=131.5
-tick examples/firework	ns_per_tick=28.8 ns_per_spawn=287.6
-tick examples/firework_burst	ns_per_tick=176.9 ns_per_spawn=88.5
-tick examples/fountain	ns_per_tick=627.4 ns_per_spawn=104.6
-tick examples/healing_aura	ns_per_tick=364.1 ns_per_spawn=104.0
-tick examples/rain	ns_per_tick=259.0 ns_per_spawn=86.3
-tick examples/shockwave	ns_per_tick=3663.7 ns_per_spawn=75.6
-tick examples/smoke_column	ns_per_tick=229.3 ns_per_spawn=152.8
-tick examples/smoke_puff	ns_per_tick=2473.8 ns_per_spawn=123.7
-tick examples/splash	ns_per_tick=124.6 ns_per_spawn=93.5
-tick examples/tornado	ns_per_tick=470.0 ns_per_spawn=78.3
-tick examples/vortex	ns_per_tick=1494.4 ns_per_spawn=119.4
+load	ms=4.0
+motion all	ns_per_particle=504.5
+motion attractor	ns_per_particle=91.1
+motion none	ns_per_particle=5.8
+motion turbulence	ns_per_particle=345.2
+motion turbulence_2_octaves	ns_per_particle=637.2
+motion vortex	ns_per_particle=82.8
+tick examples/absorb	ns_per_tick=972.1 ns_per_spawn=243.0
+tick examples/absorb_spark	ns_per_tick=1170.9 ns_per_spawn=390.3
+tick examples/arcane_burst	ns_per_tick=511.1 ns_per_spawn=108.8
+tick examples/beam	ns_per_tick=574.8 ns_per_spawn=383.2
+tick examples/breath	ns_per_tick=2969.2 ns_per_spawn=371.2
+tick examples/campfire_smoke	ns_per_tick=373.1 ns_per_spawn=933.9
+tick examples/charge	ns_per_tick=1581.8 ns_per_spawn=351.5
+tick examples/charge_release	ns_per_tick=83.5 ns_per_spawn=0.0
+tick examples/drain	ns_per_tick=1279.7 ns_per_spawn=427.0
+tick examples/firework	ns_per_tick=113.0 ns_per_spawn=1130.3
+tick examples/firework_burst	ns_per_tick=626.0 ns_per_spawn=313.0
+tick examples/fountain	ns_per_tick=2286.9 ns_per_spawn=381.2
+tick examples/healing_aura	ns_per_tick=1329.2 ns_per_spawn=380.0
+tick examples/magic_missile	ns_per_tick=756.3 ns_per_spawn=336.2
+tick examples/rain	ns_per_tick=924.5 ns_per_spawn=308.2
+tick examples/shockwave	ns_per_tick=13529.3 ns_per_spawn=278.8
+tick examples/slash_arc	ns_per_tick=228.9 ns_per_spawn=915.4
+tick examples/smoke_column	ns_per_tick=778.2 ns_per_spawn=520.0
+tick examples/smoke_puff	ns_per_tick=7924.4 ns_per_spawn=396.2
+tick examples/spark_ribbon	ns_per_tick=428.3 ns_per_spawn=321.3
+tick examples/splash	ns_per_tick=448.9 ns_per_spawn=336.7
+tick examples/tornado	ns_per_tick=1632.0 ns_per_spawn=272.4
+tick examples/vortex	ns_per_tick=4558.5 ns_per_spawn=365.7
+trail ribbon	ns_per_particle=55.3

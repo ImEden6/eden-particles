@@ -269,9 +269,11 @@ Curves on a template run over the particle's own life, from `t = 0` (spawn) to `
 | `physics.forces` | none | Up to 8 pushes applied each tick. Sprite templates only. See [Forces](#forces). |
 | `on_death` | none | Plays an effect when a particle dies. Sprite templates only. See [On death and on landing](#on-death-and-on-landing). |
 | `on_land` | none | Plays an effect the first time a particle touches a block. Sprite templates only, and needs `physics.collide`. See [On death and on landing](#on-death-and-on-landing). |
+| `trail` | none | Leaves a connected camera-facing ribbon trail behind each particle. |
 
 **Render types:**
 - `{"type": "sprite", "sprite": …, "blend": "translucent" | "additive", "emissive": bool}` is Eden's own particle and follows every curve. See [Sprites](#sprites) for animated forms. `additive` adds light: overlapping particles brighten, which suits glows, sparks and magic. `emissive` makes the particle full-bright at night.
+- `{"type": "ribbon", "sprite": …, "blend": "translucent" | "additive", "emissive": bool}` renders only a connected ribbon trail without drawing a billboard quad. World-space emitter ribbons (e.g. sword slashes) are authored using point burst emitters with `RenderMode.Ribbon` (as in `slash_arc.json`).
 - `{"type": "vanilla", "particle": "minecraft:campfire_cosy_smoke"}` spawns a vanilla particle type that takes no options. Emitter settings, lifetime and physics apply. Curves don't, and they're rejected if present.
 
 > **Additive colour tip:** additive blending adds colours up and clips at white. Pale colours (like `#D8C4FF`) turn white wherever two particles overlap. Use saturated colours with `alpha` around 0.4–0.6, so dense areas build up to a bright core instead.

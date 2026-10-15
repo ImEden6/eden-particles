@@ -22,20 +22,26 @@ public record BakedTemplate(
         Physics physics,
         BakedForces forces,
         Optional<Trigger> onDeath,
-        Optional<Trigger> onLand) {
+        Optional<Trigger> onLand,
+        Optional<BakedTrail> trail) {
 
     public static BakedTemplate bake(ParticleTemplate template) {
+        ScaledCurve fallbackWidth = template.size().orElse(ScaledCurve.constant(ParticleTemplate.DEFAULT_SIZE));
+        ScaledCurve fallbackAlpha = template.alpha().orElse(ScaledCurve.constant(1.0));
+        Gradient fallbackColor = template.color().orElse(Gradient.constant(0xFFFFFF));
+
         return new BakedTemplate(
                 template.render(),
                 template.lifetime(),
-                BakedScaledCurve.bake(template.size().orElse(ScaledCurve.constant(ParticleTemplate.DEFAULT_SIZE))),
-                BakedScaledCurve.bake(template.alpha().orElse(ScaledCurve.constant(1.0))),
+                BakedScaledCurve.bake(fallbackWidth),
+                BakedScaledCurve.bake(fallbackAlpha),
                 BakedScaledCurve.bake(template.speed().orElse(ScaledCurve.constant(1.0))),
-                template.color().orElse(Gradient.constant(0xFFFFFF)).bake(),
+                fallbackColor.bake(),
                 template.physics(),
                 BakedForces.bake(template.physics().forces()),
                 template.onDeath(),
-                template.onLand());
+                template.onLand(),
+                template.trail().map(t -> BakedTrail.bake(t, fallbackWidth, fallbackAlpha, fallbackColor)));
     }
 
     public void evaluate(float[] inputs, TemplateValues out) {
@@ -44,6 +50,10 @@ public record BakedTemplate(
         out.speed = speed.scale(inputs);
         out.gravity = physics.gravity().eval(inputs);
         out.drag = Physics.clampDrag(physics.drag().eval(inputs));
+        trail.ifPresent(t -> {
+            out.trailWidth = t.width().scale(inputs);
+            out.trailAlpha = t.alpha().scale(inputs);
+        });
         if (!forces.isEmpty()) out.forces = forces.evaluate(inputs);
         onDeath.ifPresent(t -> {
             out.deathChance = t.chance().eval(inputs);

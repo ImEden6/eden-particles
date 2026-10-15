@@ -21,7 +21,8 @@ public record ParticleTemplate(
         Optional<ScaledCurve> speed,
         Physics physics,
         Optional<Trigger> onDeath,
-        Optional<Trigger> onLand) {
+        Optional<Trigger> onLand,
+        Optional<TrailSpec> trail) {
 
     public static final float DEFAULT_SIZE = 0.1f;
 
@@ -33,6 +34,7 @@ public record ParticleTemplate(
         physics.names(out);
         onDeath.ifPresent(t -> t.names(out));
         onLand.ifPresent(t -> t.names(out));
+        trail.ifPresent(t -> t.names(out));
     }
 
     /** Effects this template plays when its particles die or land. */
@@ -51,9 +53,13 @@ public record ParticleTemplate(
                 f.optional("speed", CurveCodecs.SCALED),
                 f.optional("physics", Physics.CODEC, Physics.DEFAULT),
                 f.optional("on_death", Trigger.CODEC),
-                f.optional("on_land", Trigger.CODEC));
+                f.optional("on_land", Trigger.CODEC),
+                f.optional("trail", TrailSpec.CODEC));
         if (template.onLand.isPresent() && !template.physics.collide()) {
             throw f.failAt("on_land", "needs \"physics\": {\"collide\": true}, or particles never land");
+        }
+        if (render instanceof RenderMode.Ribbon && template.trail.isEmpty()) {
+            throw f.failAt("render", "render type 'ribbon' needs a 'trail' block");
         }
         if (render instanceof RenderMode.Vanilla) {
             List<String> curves = new ArrayList<>();
@@ -63,6 +69,7 @@ public record ParticleTemplate(
             template.speed.ifPresent(c -> curves.add("speed"));
             template.onDeath.ifPresent(c -> curves.add("on_death"));
             template.onLand.ifPresent(c -> curves.add("on_land"));
+            template.trail.ifPresent(c -> curves.add("trail"));
             if (!template.physics.forces().isEmpty()) curves.add("physics.forces");
             if (!curves.isEmpty()) {
                 throw f.fail("vanilla particles can't follow per-particle curves, triggers or forces; remove " + curves + " or use render type 'sprite'");
@@ -78,5 +85,6 @@ public record ParticleTemplate(
             .put("speed", CurveCodecs.SCALED, t.speed)
             .put("physics", Physics.CODEC, t.physics)
             .put("on_death", Trigger.CODEC, t.onDeath)
-            .put("on_land", Trigger.CODEC, t.onLand));
+            .put("on_land", Trigger.CODEC, t.onLand)
+            .put("trail", TrailSpec.CODEC, t.trail));
 }

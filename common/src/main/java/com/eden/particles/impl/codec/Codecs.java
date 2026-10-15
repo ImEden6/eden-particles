@@ -105,6 +105,12 @@ public final class Codecs {
         return INT.validate(i -> i >= min ? DataResult.success(i) : DataResult.error(() -> "must be at least " + min + ", got " + i));
     }
 
+    public static Codec<Integer> intIn(int min, int max) {
+        return INT.validate(i -> i >= min && i <= max
+                ? DataResult.success(i)
+                : DataResult.error(() -> "must be between " + min + " and " + max + ", got " + i));
+    }
+
     public static Codec<Float> floatIn(float min, float max) {
         return FLOAT.validate(f -> f >= min && f <= max
                 ? DataResult.success(f)

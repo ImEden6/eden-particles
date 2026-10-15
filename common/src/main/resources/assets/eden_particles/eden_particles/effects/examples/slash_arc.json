@@ -1,0 +1,14 @@
+{
+  "duration": 4,
+  "emitters": [
+    {
+      "name": "arc_ribbon",
+      "duration": 2,
+      "template": "eden_particles:examples/slash_ribbon",
+      "shape": { "type": "point" },
+      "spawn": { "bursts": [{ "count": 1 }] },
+      "velocity": { "type": "fixed", "direction": [2.0, 0.4, 1.2], "speed": [1.4, 1.8] },
+      "important": true
+    }
+  ]
+}

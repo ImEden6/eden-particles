@@ -4,6 +4,7 @@ import com.eden.particles.Constants;
 import com.eden.particles.impl.definition.RenderMode;
 import com.eden.particles.impl.definition.SpriteRef;
 import com.eden.particles.impl.runtime.BakedTemplate;
+import com.eden.particles.impl.runtime.BakedTrail;
 import com.eden.particles.impl.runtime.EffectFrame;
 import com.eden.particles.impl.runtime.SpawnSink;
 import com.eden.particles.impl.runtime.TemplateValues;
@@ -41,6 +42,8 @@ final class ClientSpawnSink implements SpawnSink {
     private final Map<SpriteRef, Optional<ResolvedSprite>> resolved = new HashMap<>();
     private final Set<ResourceLocation> warnedMissing = new HashSet<>();
     private final Set<SpriteRef> warnedMixed = new HashSet<>();
+    private final Set<SpriteRef> warnedIncompatibleTrailAtlas = new HashSet<>();
+    private final Set<SpriteRef> warnedIncompatibleTrailBlend = new HashSet<>();
     /** Added via {@code ParticleEngine.add} this tick; they only reach the live queues on vanilla's next tick. */
     private final Map<ParticleRenderType, Integer> pending = new IdentityHashMap<>();
     private int dropped;
@@ -55,12 +58,43 @@ final class ClientSpawnSink implements SpawnSink {
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.level == null) return;
         switch (template.render()) {
-            case RenderMode.Sprite sprite -> {
+            case RenderMode.Custom custom -> {
                 // Empty while a server image is declined or hasn't arrived: skip rather than draw a placeholder.
-                Optional<ResolvedSprite> frames = resolve(sprite.sprite());
-                if (frames.isEmpty() || !admit(EdenRenderTypes.of(frames.get().synced(), sprite.blend()))) return;
-                minecraft.particleEngine.add(new EdenParticle(minecraft.level, x, y, z, vx, vy, vz,
-                        template, sprite, frames.get(), lifetime, scale, tint, variant, values, frame));
+                Optional<ResolvedSprite> frames = resolve(custom.sprite());
+                if (frames.isEmpty()) return;
+                boolean isRibbon = custom instanceof RenderMode.Ribbon;
+                ResolvedSprite trailFrames = frames.get();
+                Optional<SpriteRef> trailSprite = template.trail().flatMap(BakedTrail::sprite);
+                if (trailSprite.isPresent()) {
+                    Optional<ResolvedSprite> own = resolve(trailSprite.get());
+                    if (own.isEmpty()) return;
+                    trailFrames = own.get();
+                }
+                RenderMode.Blend blend = isRibbon
+                        ? template.trail().flatMap(BakedTrail::blend).orElse(custom.blend())
+                        : custom.blend();
+                boolean synced = isRibbon ? trailFrames.synced() : frames.get().synced();
+
+                if (!isRibbon && template.trail().isPresent()) {
+                    BakedTrail bt = template.trail().get();
+                    if (trailFrames.synced() != synced) {
+                        if (warnedIncompatibleTrailAtlas.add(custom.sprite())) {
+                            Constants.LOG.warn("Trail for sprite '{}' uses a different texture atlas than its particle sprite; falling back to particle sprite", custom.sprite());
+                        }
+                        trailFrames = frames.get();
+                    }
+                    if (bt.blend().isPresent() && bt.blend().get() != blend) {
+                        if (warnedIncompatibleTrailBlend.add(custom.sprite())) {
+                            Constants.LOG.warn("Trail for sprite '{}' specifies blend '{}' which differs from particle blend '{}'; falling back to particle blend",
+                                    custom.sprite(), bt.blend().get(), blend);
+                        }
+                    }
+                }
+
+                if (!admit(EdenRenderTypes.of(synced, blend))) return;
+                EdenParticle particle = new EdenParticle(minecraft.level, x, y, z, vx, vy, vz,
+                        template, custom, frames.get(), trailFrames, lifetime, scale, tint, variant, values, frame);
+                minecraft.particleEngine.add(particle);
             }
             case RenderMode.Vanilla vanilla -> {
                 // The linker only admits simple particle types.
@@ -101,6 +135,8 @@ final class ClientSpawnSink implements SpawnSink {
         resolved.clear();
         warnedMissing.clear();
         warnedMixed.clear();
+        warnedIncompatibleTrailAtlas.clear();
+        warnedIncompatibleTrailBlend.clear();
     }
 
     private Optional<ResolvedSprite> resolve(SpriteRef ref) {
