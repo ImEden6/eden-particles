@@ -48,9 +48,9 @@ eden_particles:examples/rain transformed	ticks=400 attempts=1200 spawns=1200 tem
 eden_particles:examples/shockwave half	ticks=2 attempts=97 spawns=51 templates=2 hash=3bdde2102c911807 box=[-0.62 64.00 -0.64 | 1.71 64.15 1.54] speed=0.6106 life=14.73
 eden_particles:examples/shockwave plain	ticks=2 attempts=97 spawns=97 templates=2 hash=6c3004b1150d4793 box=[-0.62 64.00 -0.64 | 1.71 64.15 1.60] speed=0.6480 life=14.33
 eden_particles:examples/shockwave transformed	ticks=2 attempts=97 spawns=97 templates=2 hash=6d9c4e54f53a5793 box=[-1.24 63.63 -1.67 | 2.91 64.38 2.63] speed=0.9637 life=14.74
-eden_particles:examples/slash_arc half	ticks=4 attempts=1 spawns=1 templates=1 hash=9ebe38d3d711921e box=[0.50 64.00 0.50 | 0.50 64.00 0.50] speed=1.4750 life=8.00
-eden_particles:examples/slash_arc plain	ticks=4 attempts=1 spawns=1 templates=1 hash=9ebe38d3d711921e box=[0.50 64.00 0.50 | 0.50 64.00 0.50] speed=1.4750 life=8.00
-eden_particles:examples/slash_arc transformed	ticks=4 attempts=1 spawns=1 templates=1 hash=33d56f8dffe7dade box=[0.50 64.00 0.50 | 0.50 64.00 0.50] speed=2.5863 life=8.00
+eden_particles:examples/slash_arc half	ticks=4 attempts=3 spawns=2 templates=2 hash=be89f67fe6ea1d37 box=[2.00 63.60 0.50 | 2.00 64.40 0.50] speed=0.4000 life=10.00
+eden_particles:examples/slash_arc plain	ticks=4 attempts=3 spawns=3 templates=3 hash=f59e68afe731729d box=[2.00 63.60 0.50 | 2.00 64.40 0.50] speed=0.4000 life=10.00
+eden_particles:examples/slash_arc transformed	ticks=4 attempts=3 spawns=3 templates=3 hash=a3b91b47a64c1e3e box=[1.39 63.54 -1.60 | 1.56 64.72 -1.45] speed=0.6000 life=10.00
 eden_particles:examples/smoke_column half	ticks=400 attempts=564 spawns=270 templates=1 hash=5985288e97b1011a box=[0.21 64.20 0.21 | 0.78 64.25 0.77] speed=0.0445 life=85.93
 eden_particles:examples/smoke_column plain	ticks=400 attempts=564 spawns=564 templates=1 hash=9d30800ccab278c8 box=[0.21 64.20 0.21 | 0.79 64.25 0.80] speed=0.0451 life=85.21
 eden_particles:examples/smoke_column transformed	ticks=400 attempts=612 spawns=612 templates=1 hash=09e59cb52608b5b7 box=[0.10 64.23 0.11 | 0.99 64.45 0.98] speed=0.0675 life=84.87

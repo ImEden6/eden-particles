@@ -355,10 +355,8 @@ public final class EdenParticle extends TextureSheetParticle {
                     float uA = u0 + uSpan * f0;
                     float uB = u0 + uSpan * f1;
 
-                    buffer.addVertex(xL0, yL0, zL0).setUv(uA, v0).setColor(r0, g0, b0, a0).setLight(light);
-                    buffer.addVertex(xL1, yL1, zL1).setUv(uB, v0).setColor(r1, g1, b1, a1).setLight(light);
-                    buffer.addVertex(xR1, yR1, zR1).setUv(uB, v1).setColor(r1, g1, b1, a1).setLight(light);
-                    buffer.addVertex(xR0, yR0, zR0).setUv(uA, v1).setColor(r0, g0, b0, a0).setLight(light);
+                    quad(buffer, light, xL0, yL0, zL0, xL1, yL1, zL1, xR1, yR1, zR1, xR0, yR0, zR0,
+                            uA, uB, v0, v1, r0, g0, b0, a0, r1, g1, b1, a1);
                 } else {
                     float curXL = xL0, curYL = yL0, curZL = zL0;
                     float curXR = xR0, curYR = yR0, curZR = zR0;
@@ -379,10 +377,8 @@ public final class EdenParticle extends TextureSheetParticle {
                         float splitB = lerp(b0, b1, tSplit);
                         float splitA = lerp(a0, a1, tSplit);
 
-                        buffer.addVertex(curXL, curYL, curZL).setUv(uStart, v0).setColor(curR, curG, curB, curA).setLight(light);
-                        buffer.addVertex(splitXL, splitYL, splitZL).setUv(u1, v0).setColor(splitR, splitG, splitB, splitA).setLight(light);
-                        buffer.addVertex(splitXR, splitYR, splitZR).setUv(u1, v1).setColor(splitR, splitG, splitB, splitA).setLight(light);
-                        buffer.addVertex(curXR, curYR, curZR).setUv(uStart, v1).setColor(curR, curG, curB, curA).setLight(light);
+                        quad(buffer, light, curXL, curYL, curZL, splitXL, splitYL, splitZL, splitXR, splitYR, splitZR, curXR, curYR, curZR,
+                                uStart, u1, v0, v1, curR, curG, curB, curA, splitR, splitG, splitB, splitA);
 
                         curXL = splitXL; curYL = splitYL; curZL = splitZL;
                         curXR = splitXR; curYR = splitYR; curZR = splitZR;
@@ -393,10 +389,8 @@ public final class EdenParticle extends TextureSheetParticle {
                     if (d1 > k1 * tileLen + 1e-6f) {
                         float f1 = (d1 - k1 * tileLen) / tileLen;
                         float uEnd = u0 + uSpan * f1;
-                        buffer.addVertex(curXL, curYL, curZL).setUv(uStart, v0).setColor(curR, curG, curB, curA).setLight(light);
-                        buffer.addVertex(xL1, yL1, zL1).setUv(uEnd, v0).setColor(r1, g1, b1, a1).setLight(light);
-                        buffer.addVertex(xR1, yR1, zR1).setUv(uEnd, v1).setColor(r1, g1, b1, a1).setLight(light);
-                        buffer.addVertex(curXR, curYR, curZR).setUv(uStart, v1).setColor(curR, curG, curB, curA).setLight(light);
+                        quad(buffer, light, curXL, curYL, curZL, xL1, yL1, zL1, xR1, yR1, zR1, curXR, curYR, curZR,
+                                uStart, uEnd, v0, v1, curR, curG, curB, curA, r1, g1, b1, a1);
                     }
                 }
 
@@ -428,16 +422,35 @@ public final class EdenParticle extends TextureSheetParticle {
                     continue;
                 }
 
-                buffer.addVertex(xL0, yL0, zL0).setUv(u0Val, v0).setColor(r0, g0, b0, a0).setLight(light);
-                buffer.addVertex(xL1, yL1, zL1).setUv(u1Val, v0).setColor(r1, g1, b1, a1).setLight(light);
-                buffer.addVertex(xR1, yR1, zR1).setUv(u1Val, v1).setColor(r1, g1, b1, a1).setLight(light);
-                buffer.addVertex(xR0, yR0, zR0).setUv(u0Val, v1).setColor(r0, g0, b0, a0).setLight(light);
+                quad(buffer, light, xL0, yL0, zL0, xL1, yL1, zL1, xR1, yR1, zR1, xR0, yR0, zR0,
+                        u0Val, u1Val, v0, v1, r0, g0, b0, a0, r1, g1, b1, a1);
 
                 xL0 = xL1; yL0 = yL1; zL0 = zL1;
                 xR0 = xR1; yR0 = yR1; zR0 = zR1;
                 u0Val = u1Val;
                 r0 = r1; g0 = g1; b0 = b1; a0 = a1;
             }
+        }
+    }
+
+    /**
+     * One strip segment from its start edge (L0, R0) to its end edge (L1, R1), in camera-relative space, wound to face
+     * the camera.
+     */
+    private static void quad(VertexConsumer buffer, int light,
+                             float xL0, float yL0, float zL0, float xL1, float yL1, float zL1,
+                             float xR1, float yR1, float zR1, float xR0, float yR0, float zR0,
+                             float uA, float uB, float v0, float v1,
+                             float r0, float g0, float b0, float a0, float r1, float g1, float b1, float a1) {
+        buffer.addVertex(xL0, yL0, zL0).setUv(uA, v0).setColor(r0, g0, b0, a0).setLight(light);
+        if (RibbonMath.facesCamera(xL0, yL0, zL0, xL1, yL1, zL1, xR1, yR1, zR1)) {
+            buffer.addVertex(xL1, yL1, zL1).setUv(uB, v0).setColor(r1, g1, b1, a1).setLight(light);
+            buffer.addVertex(xR1, yR1, zR1).setUv(uB, v1).setColor(r1, g1, b1, a1).setLight(light);
+            buffer.addVertex(xR0, yR0, zR0).setUv(uA, v1).setColor(r0, g0, b0, a0).setLight(light);
+        } else {
+            buffer.addVertex(xR0, yR0, zR0).setUv(uA, v1).setColor(r0, g0, b0, a0).setLight(light);
+            buffer.addVertex(xR1, yR1, zR1).setUv(uB, v1).setColor(r1, g1, b1, a1).setLight(light);
+            buffer.addVertex(xL1, yL1, zL1).setUv(uB, v0).setColor(r1, g1, b1, a1).setLight(light);
         }
     }
 

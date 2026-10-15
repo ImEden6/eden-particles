@@ -5,9 +5,9 @@
     "blend": "additive",
     "emissive": true
   },
-  "lifetime": 8,
+  "lifetime": 10,
   "trail": {
-    "lifetime": 8,
+    "lifetime": 6,
     "max_points": 24,
     "min_distance": 0.04,
     "width": { "keys": [{ "t": 0, "v": 0.35 }, { "t": 1, "v": 0.0, "ease": "out_quad" }] },
@@ -15,5 +15,10 @@
     "color": { "keys": [{ "t": 0, "color": "#00E5FF" }, { "t": 1, "color": "#2979FF" }], "space": "oklab" },
     "mode": "stretch"
   },
-  "physics": { "drag": 0.85 }
+  "physics": {
+    "drag": 1.0,
+    "forces": [
+      { "type": "vortex", "strength": 0, "pull": 0.1 }
+    ]
+  }
 }

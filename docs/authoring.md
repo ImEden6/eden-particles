@@ -266,14 +266,14 @@ Curves on a template run over the particle's own life, from `t = 0` (spawn) to `
 | `physics.gravity` | `0` | `1` is vanilla's normal pull. Negative values float upward. |
 | `physics.drag` | `0.98` | Speed kept each tick (vanilla's friction). `0.9` stops quickly, `1` never slows down. |
 | `physics.collide` | `false` | Bounces off blocks. Costs more, so leave it off unless you need it. |
-| `physics.forces` | none | Up to 8 pushes applied each tick. Sprite templates only. See [Forces](#forces). |
-| `on_death` | none | Plays an effect when a particle dies. Sprite templates only. See [On death and on landing](#on-death-and-on-landing). |
-| `on_land` | none | Plays an effect the first time a particle touches a block. Sprite templates only, and needs `physics.collide`. See [On death and on landing](#on-death-and-on-landing). |
-| `trail` | none | Leaves a connected camera-facing ribbon trail behind each particle. |
+| `physics.forces` | none | Up to 8 pushes applied each tick. Not on vanilla templates. See [Forces](#forces). |
+| `on_death` | none | Plays an effect when a particle dies. Not on vanilla templates. See [On death and on landing](#on-death-and-on-landing). |
+| `on_land` | none | Plays an effect the first time a particle touches a block. Not on vanilla templates, and needs `physics.collide`. See [On death and on landing](#on-death-and-on-landing). |
+| `trail` | none | A ribbon left behind each particle. Not on vanilla templates. See [Trails](#trails). |
 
 **Render types:**
 - `{"type": "sprite", "sprite": …, "blend": "translucent" | "additive", "emissive": bool}` is Eden's own particle and follows every curve. See [Sprites](#sprites) for animated forms. `additive` adds light: overlapping particles brighten, which suits glows, sparks and magic. `emissive` makes the particle full-bright at night.
-- `{"type": "ribbon", "sprite": …, "blend": "translucent" | "additive", "emissive": bool}` renders only a connected ribbon trail without drawing a billboard quad. World-space emitter ribbons (e.g. sword slashes) are authored using point burst emitters with `RenderMode.Ribbon` (as in `slash_arc.json`).
+- `{"type": "ribbon", "sprite": …, "blend": "translucent" | "additive", "emissive": bool}` draws only the particle's [trail](#trails), with no quad at its head. It needs a `trail` block. Use it for slashes and streaks, where the shape of the path is the effect.
 - `{"type": "vanilla", "particle": "minecraft:campfire_cosy_smoke"}` spawns a vanilla particle type that takes no options. Emitter settings, lifetime and physics apply. Curves don't, and they're rejected if present.
 
 > **Additive colour tip:** additive blending adds colours up and clips at white. Pale colours (like `#D8C4FF`) turn white wherever two particles overlap. Use saturated colours with `alpha` around 0.4–0.6, so dense areas build up to a bright core instead.
@@ -292,6 +292,45 @@ Curves on a template run over the particle's own life, from `t = 0` (spawn) to `
 - A **sheet** is read left to right, top to bottom. `count` defaults to `columns × rows`; use it when the last row isn't full. Up to 64 frames in a list, 256 in a sheet.
 - Frames can be resource-pack sprites (including vanilla ones such as `minecraft:generic_0` … `minecraft:generic_7`) or datapack images, but not a mix of both in one sprite.
 
+### Trails
+
+A trail is a ribbon that follows the particle, turned to face the camera. It's made of points the particle drops as it moves, and each point fades out over the trail's `lifetime`.
+
+```json
+"trail": {
+  "lifetime": 14,
+  "max_points": 32,
+  "width": [[0, 0.22], [1, 0]],
+  "alpha": [[0, 0.85], [1, 0]],
+  "color": [{ "t": 0, "color": "#E040FB" }, { "t": 1, "color": "#651FFF" }]
+}
+```
+
+| Field | Default | |
+|---|---|---|
+| `lifetime` | required | Ticks each point lasts. |
+| `max_points` | `16` | 3 to 64. When full, the oldest point is dropped, which shortens the trail. |
+| `min_distance` | `0.02` | Blocks the particle must move before it drops another point. |
+| `width` | the template's `size` | Curve of the width in blocks. |
+| `alpha` | the template's `alpha` | Curve of opacity. |
+| `color` | the template's `color` | Colour or gradient. The effect's tint applies on top. |
+| `sprite` | the render sprite | Texture of the ribbon. See [Sprites](#sprites); animated sprites follow the particle's life. |
+| `mode` | `"stretch"` | `stretch` spreads the texture once along the whole trail; `tile` repeats it every `tile_length` blocks. |
+| `tile_length` | `1` | Blocks per texture repeat in `tile` mode. At least 0.01. |
+| `blend` | the render blend | Only for `ribbon` templates. A `sprite` template draws its trail with the head's blend and ignores this, with a warning. |
+| `emissive` | the render `emissive` | Full-bright at night. |
+
+- `width`, `alpha` and `color` run over each point's age, from `t = 0` (just dropped) to `t = 1` (`lifetime` ticks old), not over the particle's life. Width grows with the effect's `scale`.
+- When the particle dies, its trail stays until the last point fades, including when an attractor absorbs it. `on_death` fires when the particle dies, not when the trail ends.
+- The trail sprite must come from the same place as the head sprite: both from resource packs or both from a datapack. If they don't, a `sprite` template uses its head sprite for the trail and logs a warning.
+- Each point costs about as much as a small quad. Long trails on hundreds of particles add up, so keep `max_points` low on dense effects.
+
+The bundled examples show each kind:
+
+- `eden_particles:examples/magic_missile`: sprite heads with trails, swirled by turbulence.
+- `eden_particles:examples/spark_ribbon`: a burst of falling sparks with short trails.
+- `eden_particles:examples/slash_arc`: three stacked `ribbon` swipes a tick apart, each held on a curved path by a vortex's `pull`, like a sword swing.
+
 ## Forces
 
 A force pushes particles every tick. Forces go in a template's `physics` as a list of up to 8:
@@ -309,7 +348,7 @@ A force pushes particles every tick. Forces go in a template's `physics` as a li
 These rules apply to every force:
 
 - Each tick a force adds an acceleration to the particle's velocity, after gravity and before drag. Units are blocks per tick², scaled by the effect's `scale` like gravity. With `drag` below 1, a steady force settles to a top speed of roughly `strength / (1 − drag)`.
-- Only `sprite` render templates can have forces. A `vanilla` template with forces fails to load, the same as size and alpha curves and `on_death`.
+- `vanilla` templates can't have forces. One with forces fails to load, the same as size and alpha curves and `on_death`.
 - `strength` is a curve over the particle's life, like `size` and `alpha`: a number, an expression, a key list, or an object with `keys` and `scale`.
 - Expressions in a force are evaluated when the particle spawns, using the effect's inputs at that moment. Changing an input later affects new particles only.
 - Points and lengths (`point`, `radius`, `absorb`, turbulence `scale`) are in the effect's space. They follow the anchor as it moves, turn with its facing and grow with its scale. When the effect ends, its leftover particles keep the last position.

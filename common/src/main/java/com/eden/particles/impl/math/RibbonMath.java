@@ -9,6 +9,17 @@ public final class RibbonMath {
     private RibbonMath() {
     }
 
+    /**
+     * Whether the triangle a, b, c, in camera-relative space, winds counter-clockwise as seen from the camera. Particles
+     * are back-face culled, so only those are drawn.
+     */
+    public static boolean facesCamera(float ax, float ay, float az, float bx, float by, float bz, float cx, float cy, float cz) {
+        float ex = bx - ax, ey = by - ay, ez = bz - az;
+        float fx = cx - ax, fy = cy - ay, fz = cz - az;
+        float nx = ey * fz - ez * fy, ny = ez * fx - ex * fz, nz = ex * fy - ey * fx;
+        return nx * ax + ny * ay + nz * az < 0f;
+    }
+
     public static void computeExtrusions(
             float[] px, float[] py, float[] pz, float[] widths, int count,
             float camX, float camY, float camZ,

@@ -2,12 +2,33 @@
   "duration": 4,
   "emitters": [
     {
-      "name": "arc_ribbon",
+      "name": "arc_low",
+      "start": 0,
       "duration": 2,
       "template": "eden_particles:examples/slash_ribbon",
-      "shape": { "type": "point" },
+      "offset": [1.5, -0.4, 0],
       "spawn": { "bursts": [{ "count": 1 }] },
-      "velocity": { "type": "fixed", "direction": [2.0, 0.4, 1.2], "speed": [1.4, 1.8] },
+      "velocity": { "type": "fixed", "direction": [0, 0.1, -1], "speed": 0.4 },
+      "important": true
+    },
+    {
+      "name": "arc_mid",
+      "start": 1,
+      "duration": 2,
+      "template": "eden_particles:examples/slash_ribbon",
+      "offset": [1.5, 0, 0],
+      "spawn": { "bursts": [{ "count": 1 }] },
+      "velocity": { "type": "fixed", "direction": [0, 0.1, -1], "speed": 0.4 },
+      "important": true
+    },
+    {
+      "name": "arc_high",
+      "start": 2,
+      "duration": 2,
+      "template": "eden_particles:examples/slash_ribbon",
+      "offset": [1.5, 0.4, 0],
+      "spawn": { "bursts": [{ "count": 1 }] },
+      "velocity": { "type": "fixed", "direction": [0, 0.1, -1], "speed": 0.4 },
       "important": true
     }
   ]

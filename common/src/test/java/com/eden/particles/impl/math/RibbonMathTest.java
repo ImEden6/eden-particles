@@ -7,6 +7,27 @@ import static org.junit.jupiter.api.Assertions.*;
 class RibbonMathTest {
 
     @Test
+    void facesCameraOnlyWhenCounterClockwiseFromCamera() {
+        // Camera at the origin looking down -z: (0,0) -> (1,0) -> (1,1) is counter-clockwise on screen.
+        assertTrue(RibbonMath.facesCamera(0f, 0f, -5f, 1f, 0f, -5f, 1f, 1f, -5f));
+        assertFalse(RibbonMath.facesCamera(0f, 0f, -5f, 1f, 1f, -5f, 1f, 0f, -5f));
+    }
+
+    @Test
+    void extrudedSegmentsAreOneSidedEitherWay() {
+        float[] px = {1f, 0f, -1f}, py = {0f, 0f, 0f}, pz = {-5f, -5f, -5f};
+        float[] widths = {0.4f, 0.4f, 0.4f};
+        float[] lx = new float[3], ly = new float[3], lz = new float[3];
+        float[] rx = new float[3], ry = new float[3], rz = new float[3];
+        RibbonMath.computeExtrusions(px, py, pz, widths, 3, 0f, 0f, 0f, 0f, 1f, 0f, lx, ly, lz, rx, ry, rz);
+        for (int i = 1; i < 3; i++) {
+            boolean forward = RibbonMath.facesCamera(lx[i - 1], ly[i - 1], lz[i - 1], lx[i], ly[i], lz[i], rx[i], ry[i], rz[i]);
+            boolean reversed = RibbonMath.facesCamera(lx[i - 1], ly[i - 1], lz[i - 1], rx[i - 1], ry[i - 1], rz[i - 1], rx[i], ry[i], rz[i]);
+            assertNotEquals(forward, reversed, "segment " + i);
+        }
+    }
+
+    @Test
     void extrudesStraightLineSideView() {
         float[] px = {-2f, -1f, 0f, 1f, 2f};
         float[] py = {0f, 0f, 0f, 0f, 0f};
