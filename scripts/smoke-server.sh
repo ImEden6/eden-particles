@@ -7,8 +7,7 @@ loader="${1:?usage: scripts/smoke-server.sh fabric|neoforge|forge}"
 root="$(cd "$(dirname "$0")/.." && pwd)"
 run="$root/$loader/runs/smoke"
 case "$loader" in
-    fabric | neoforge) task=":$loader:runSmokeServer" ;;
-    forge) task=":forge:SmokeServer" ;;
+    fabric | neoforge | forge) task=":$loader:runSmokeServer" ;;
     *) echo "unknown loader $loader" >&2; exit 2 ;;
 esac
 
