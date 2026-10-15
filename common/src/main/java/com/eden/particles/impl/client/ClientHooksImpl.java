@@ -32,6 +32,7 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -68,6 +69,11 @@ final class ClientHooksImpl implements ClientHooks {
     @Override
     public boolean isLoaded(ResourceLocation effect) {
         return manager.isLoaded(effect);
+    }
+
+    @Override
+    public Collection<ResourceLocation> effectIds() {
+        return ClientEffects.STORE.effectIds();
     }
 
     @Override

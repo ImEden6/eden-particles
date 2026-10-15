@@ -66,6 +66,10 @@ public class DatapackDefinitions extends SimplePreparableReloadListener<Datapack
         return SYNC.entries();
     }
 
+    static List<ResourceLocation> effectIds() {
+        return SYNC.entries().stream().filter(e -> e.kind() == DefinitionError.Kind.EFFECT).map(SyncDefinitionsPayload.Entry::id).toList();
+    }
+
     /**
      * Sends the current datapack definitions, then offers images; an empty sync still clears what the client had.
      * Safe to call repeatedly: a player is only sent what changed since their last sync.

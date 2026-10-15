@@ -1,5 +1,6 @@
 package com.eden.particles;
 
+import com.eden.particles.impl.EffectSuggestions;
 import com.eden.particles.platform.Services;
 
 /**
@@ -13,5 +14,6 @@ public final class EdenParticlesCommon {
     public static void init() {
         Constants.LOG.info("Initializing {} on {} ({})", Constants.MOD_NAME,
                 Services.PLATFORM.getPlatformName(), Services.PLATFORM.getEnvironmentName());
+        EffectSuggestions.init();
     }
 }

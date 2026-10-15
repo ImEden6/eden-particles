@@ -11,6 +11,7 @@ import com.eden.particles.impl.net.UpdateEffectPayload;
 import com.google.gson.JsonElement;
 import net.minecraft.resources.ResourceLocation;
 
+import java.util.Collection;
 import java.util.List;
 
 /** Client functionality reached from side-agnostic code; implemented in {@code impl.client}. */
@@ -19,6 +20,8 @@ public interface ClientHooks {
     EffectHandle play(ResourceLocation effect, EffectAnchor anchor, EffectParams params);
 
     boolean isLoaded(ResourceLocation effect);
+
+    Collection<ResourceLocation> effectIds();
 
     void onReload(Runnable listener);
 

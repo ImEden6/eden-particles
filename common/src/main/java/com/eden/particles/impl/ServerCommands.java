@@ -32,8 +32,8 @@ import java.util.Locale;
  * {@code /eden_particles play <effect> [pos] [targets | persistent | with <inputs>]},
  * {@code beam <effect> <from> <to> [<inputs>]}, {@code attach <effect> <entity> <turning> <feet|eyes> [x y z] [inputs]},
  * {@code set <input> <value>} (on effects these commands started) and {@code stop [targets]}; a plain {@code stop} also forgets the
- * level's persistent effects. Inputs are written {@code power=2 spread=0.5}. Effect ids aren't suggested: they live in
- * client resource packs, which the server can't see.
+ * level's persistent effects. Inputs are written {@code power=2 spread=0.5}. Effect ids are suggested by
+ * {@link EffectSuggestions}.
  */
 public final class ServerCommands {
 
@@ -48,7 +48,7 @@ public final class ServerCommands {
         dispatcher.register(Commands.literal("eden_particles")
                 .requires(source -> source.hasPermission(2))
                 .then(Commands.literal("play")
-                        .then(Commands.argument("effect", ResourceLocationArgument.id())
+                        .then(Commands.argument("effect", ResourceLocationArgument.id()).suggests(EffectSuggestions.EFFECTS)
                                 .executes(c -> play(c, c.getSource().getPosition(), null, ""))
                                 .then(Commands.argument("pos", Vec3Argument.vec3())
                                         .executes(c -> play(c, Vec3Argument.getVec3(c, "pos"), null, ""))
@@ -61,7 +61,7 @@ public final class ServerCommands {
                                         .then(Commands.argument("targets", EntityArgument.players())
                                                 .executes(c -> play(c, Vec3Argument.getVec3(c, "pos"), EntityArgument.getPlayers(c, "targets"), ""))))))
                 .then(Commands.literal("beam")
-                        .then(Commands.argument("effect", ResourceLocationArgument.id())
+                        .then(Commands.argument("effect", ResourceLocationArgument.id()).suggests(EffectSuggestions.EFFECTS)
                                 .then(Commands.argument("from", EntityArgument.entity())
                                         .then(Commands.argument("to", EntityArgument.entity())
                                                 .executes(c -> beam(c, ""))
@@ -100,7 +100,7 @@ public final class ServerCommands {
             }
             entity.then(turningNode);
         }
-        return Commands.literal("attach").then(Commands.argument("effect", ResourceLocationArgument.id()).then(entity));
+        return Commands.literal("attach").then(Commands.argument("effect", ResourceLocationArgument.id()).suggests(EffectSuggestions.EFFECTS).then(entity));
     }
 
     private static Vec3 offset(CommandContext<CommandSourceStack> c) {
