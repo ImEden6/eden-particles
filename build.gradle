@@ -3,4 +3,72 @@ plugins {
     id 'fabric-loom' version '1.16.3' apply false
     // see https://projects.neoforged.net/neoforged/moddevgradle for new versions
     id 'net.neoforged.moddev' version '2.0.148' apply false
+    id 'me.modmuss50.mod-publish-plugin' version '2.2.1' apply false
+}
+
+// Run by .github/workflows/build.yml on a version tag. A site with an empty project ID is skipped. Without a token for
+// every site it's a dry run that only writes what it would upload to <loader>/build/publishMods.
+def modrinthId = modrinth_project_id.trim()
+def curseforgeId = curseforge_project_id.trim()
+def toModrinth = !modrinthId.isEmpty()
+def toCurseforge = !curseforgeId.isEmpty()
+def missingToken = (toModrinth && providers.environmentVariable('MODRINTH_TOKEN').getOrNull() == null)
+        || (toCurseforge && providers.environmentVariable('CURSEFORGE_TOKEN').getOrNull() == null)
+
+// Release notes are this version's section of CHANGELOG.md, so a release can't go out without one.
+def releaseVersion = version
+def releaseMinecraft = minecraft_version
+def releaseNotes = providers.fileContents(layout.projectDirectory.file('CHANGELOG.md')).asText.map { text ->
+    def section = text.replace('\r\n', '\n') =~ /(?ms)^## \[${java.util.regex.Pattern.quote(releaseVersion)}\][^\n]*\n(.*?)(?=^## \[|\z)/
+    if (!section.find()) throw new GradleException("CHANGELOG.md has no section for ${releaseVersion}")
+    section.group(1).trim()
+}
+
+// The release jar tasks are only created by each loader's own build script.
+evaluationDependsOnChildren()
+
+// Slugs are the same on Modrinth and CurseForge.
+def loaders = [
+        fabric  : [name: 'Fabric', jar: 'remapJar', requires: ['fabric-api']],
+        neoforge: [name: 'NeoForge', jar: 'jar', requires: []],
+        forge   : [name: 'Forge', jar: 'jar', requires: []],
+]
+
+loaders.each { loader, info ->
+    project(":${loader}") {
+        apply plugin: 'me.modmuss50.mod-publish-plugin'
+
+        publishMods {
+            file = tasks.named(info.jar, AbstractArchiveTask).flatMap { it.archiveFile }
+            changelog = releaseNotes
+            type = STABLE
+            displayName = "Eden's Particles ${releaseVersion} (${info.name} ${releaseMinecraft})"
+            modLoaders.add(loader)
+            dryRun = missingToken
+
+            if (toModrinth) {
+                modrinth {
+                    projectId = modrinthId
+                    accessToken = providers.environmentVariable('MODRINTH_TOKEN')
+                    minecraftVersions.add(releaseMinecraft)
+                    if (!info.requires.isEmpty()) requires(*info.requires)
+                    optional('lambdynamiclights')
+                }
+            }
+
+            if (toCurseforge) {
+                curseforge {
+                    projectId = curseforgeId
+                    accessToken = providers.environmentVariable('CURSEFORGE_TOKEN')
+                    minecraftVersions.add(releaseMinecraft)
+                    javaVersions.add(JavaVersion.VERSION_21)
+                    // Effects render on clients; servers need it for the commands, the API and datapack sync.
+                    client = true
+                    server = true
+                    if (!info.requires.isEmpty()) requires(*info.requires)
+                    optional('lambdynamiclights')
+                }
+            }
+        }
+    }
 }

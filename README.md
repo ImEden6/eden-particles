@@ -15,7 +15,27 @@ Examples ship with the mod: try `/eden_particles_client play eden_particles:exam
 
 ## Depending on it
 
-Releases are published to GitHub Packages. GitHub needs a token to read from it, even for public packages: create a personal access token with `read:packages` (and access to this repository while it's private), and put it in `~/.gradle/gradle.properties` as `gpr.user=<your GitHub name>` and `gpr.key=<token>`.
+Releases are on CurseForge, one file per loader. Mark Eden's Particles as a **Required Dependency** of your project there, so launchers install it for your players, and declare it in your `fabric.mod.json` or `mods.toml` (mod id `eden_particles`).
+
+To compile against it, use [CurseMaven](https://www.cursemaven.com/), which serves CurseForge files without a token. `<project id>` is on the project page's sidebar, and `<file id>` is the number at the end of a file's URL:
+
+```groovy
+repositories {
+    maven {
+        url = 'https://cursemaven.com'
+        content { includeGroup 'curse.maven' }
+    }
+}
+
+dependencies {
+    // Fabric (Loom)
+    modImplementation 'curse.maven:eden-particles-<project id>:<fabric file id>'
+    // NeoForge (ModDevGradle) and Forge (ForgeGradle 7)
+    implementation 'curse.maven:eden-particles-<project id>:<neoforge or forge file id>'
+}
+```
+
+The multiloader `common` jar (vanilla mappings, for a common module's `compileOnly`) is only on GitHub Packages. GitHub needs a token to read from it, even for public packages: create a personal access token with `read:packages` (and access to this repository while it's private), and put it in `~/.gradle/gradle.properties` as `gpr.user=<your GitHub name>` and `gpr.key=<token>`.
 
 ```groovy
 repositories {
@@ -29,18 +49,11 @@ repositories {
 }
 
 dependencies {
-    // Fabric (Loom)
-    modImplementation 'com.eden.particles:eden_particles-fabric-1.21.1:0.1.0'
-    // NeoForge (ModDevGradle)
-    implementation 'com.eden.particles:eden_particles-neoforge-1.21.1:0.1.0'
-    // Forge (ForgeGradle)
-    implementation fg.deobf('com.eden.particles:eden_particles-forge-1.21.1:0.1.0')
-    // A multiloader common module (vanilla mappings)
-    compileOnly 'com.eden.particles:eden_particles-common-1.21.1:0.1.0'
+    compileOnly 'com.eden.particles:eden_particles-common-1.21.1:0.2.0'
 }
 ```
 
-Players need the mod installed too.
+GitHub Packages also has the loader jars, as `eden_particles-<fabric|neoforge|forge>-1.21.1`.
 
 ## Project layout
 

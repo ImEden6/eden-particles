@@ -106,3 +106,25 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: ./gradlew publish --console=plain
+
+      - name: Check the project IDs and tokens
+        env:
+          CURSEFORGE_TOKEN: ${{ secrets.CURSEFORGE_TOKEN }}
+          MODRINTH_TOKEN: ${{ secrets.MODRINTH_TOKEN }}
+        run: |
+          prop() { grep "^$1=" gradle.properties | cut -d= -f2- | tr -d '' | xargs; }
+          # A missing token makes publishMods silently do a dry run, which would look like a release.
+          if [ -n "$(prop curseforge_project_id)" ] && [ -z "${CURSEFORGE_TOKEN}" ]; then
+            echo "::error::Add a CURSEFORGE_TOKEN secret" >&2
+            exit 1
+          fi
+          if [ -n "$(prop modrinth_project_id)" ] && [ -z "${MODRINTH_TOKEN}" ]; then
+            echo "::error::Add a MODRINTH_TOKEN secret" >&2
+            exit 1
+          fi
+
+      - name: Publish to CurseForge and Modrinth
+        env:
+          CURSEFORGE_TOKEN: ${{ secrets.CURSEFORGE_TOKEN }}
+          MODRINTH_TOKEN: ${{ secrets.MODRINTH_TOKEN }}
+        run: ./gradlew publishMods --console=plain
