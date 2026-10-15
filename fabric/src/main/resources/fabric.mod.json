@@ -15,6 +15,9 @@
         ],
         "client": [
             "com.eden.particles.EdenParticlesFabricClient"
+        ],
+        "lambdynlights:initializer": [
+            "com.eden.particles.impl.client.light.LambDynamicLightsCompat"
         ]
     },
     "mixins": [

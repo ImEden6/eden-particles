@@ -26,6 +26,10 @@ dependencies {
         localRuntime 'io.github.douira:glsl-transformer:2.0.1'
         localRuntime 'org.antlr:antlr4-runtime:4.13.1'
     }
+    // Not remapped: its intermediary jar needs a newer Loom, and dev runs use Mojang names anyway.
+    compileOnly("dev.lambdaurora.lambdynamiclights:lambdynamiclights-api:${lambdynamiclights_version}") {
+        attributes { attribute(Attribute.of('net.minecraft.mappings', String), 'mojmap') }
+    }
     minecraft "com.mojang:minecraft:${minecraft_version}"
     mappings loom.layered {
         officialMojangMappings()

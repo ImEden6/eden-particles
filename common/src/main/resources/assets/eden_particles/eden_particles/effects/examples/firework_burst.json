@@ -17,6 +17,9 @@
       "distribution": "even",
       "spawn": { "bursts": [{ "at": 0, "count": 40 }] },
       "velocity": { "type": "radial", "speed": [0.15, 0.25] }
-    }
+    },
+    { "sound": "minecraft:entity.firework_rocket.blast", "pitch": [0.9, 1.1] },
+    { "sound": "minecraft:entity.firework_rocket.twinkle", "start": 8, "volume": 0.6 },
+    { "light": [[0, 14], [1, 0]], "duration": 10 }
   ]
 }

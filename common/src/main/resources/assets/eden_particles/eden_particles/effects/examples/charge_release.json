@@ -12,6 +12,8 @@
       "effect": "eden_particles:examples/shockwave",
       "start": 40,
       "scale": "0.5 + power * 0.5"
-    }
+    },
+    { "sound": "minecraft:entity.generic.explode", "start": 40, "volume": 0.6, "pitch": 1.4 },
+    { "light": [[0, 15], [1, 0]], "start": 40, "duration": 12 }
   ]
 }

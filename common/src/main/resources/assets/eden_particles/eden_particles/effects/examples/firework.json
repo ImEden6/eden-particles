@@ -15,6 +15,7 @@
       },
       "spawn": { "bursts": [{ "at": 0, "count": 3 }] },
       "velocity": { "type": "cone", "half_angle": 15, "speed": [0.6, 0.7] }
-    }
+    },
+    { "sound": "minecraft:entity.firework_rocket.launch" }
   ]
 }

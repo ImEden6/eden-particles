@@ -87,7 +87,7 @@ In singleplayer, put the zip in `.minecraft/resourcepacks` and turn it on under 
 | `loop` | `false` | Restart the timeline when it ends. Looping effects play until stopped. |
 | `range` | `64` | Particles thin out from 3/8 of this distance and are gone by 3/4 of it. |
 | `inputs` | none | Numbers the code playing the effect can set, with their defaults. See [Inputs](#inputs). |
-| `emitters` | required | At least one. |
+| `emitters` | required | At least one. Each entry is an [emitter](#emitter), a [sub-effect](#sub-effects), a [sound](#sounds) or a [light](#lights). |
 
 ## Inputs
 
@@ -180,6 +180,63 @@ See `eden_particles:examples/firework` (a rocket that bursts on death) and `eden
 - An effect can't play itself, directly or through a chain of sub-effects and triggers. The error names the loop.
 
 If the played effect fails to load, the effect that plays it fails too, and the error points to the child's error.
+
+## Sounds
+
+An entry in `emitters` with `"sound"` plays a sound as part of the effect:
+
+```json
+{ "sound": "minecraft:entity.firework_rocket.blast", "start": 0, "volume": 0.8, "pitch": [0.9, 1.1] }
+{ "sound": "minecraft:block.beacon.ambient", "loop": true, "start": 10, "duration": 30, "pitch": "0.8 + power * 0.6" }
+```
+
+| Field | Default | |
+|---|---|---|
+| `sound` | required | A sound event id, from vanilla or any resource pack's `sounds.json`. |
+| `start` | `0` | Tick it starts on. |
+| `loop` | `false` | Repeat the sound until `duration` ends or the effect stops, then fade it out. |
+| `duration` | rest of the timeline | Looping sounds only. |
+| `volume` | `1` | A [random value](#random-values). Above 1 makes it heard from further away, like vanilla. |
+| `pitch` | `1` | A random value. Vanilla clamps it to 0.5–2. |
+| `offset` | `[0, 0, 0]` | Moves the sound in the effect's frame. |
+| `category` | `"player"` | Which volume slider controls it: `master`, `music`, `record`, `weather`, `block`, `hostile`, `neutral`, `player`, `ambient` or `voice`. |
+| `name` | none | Used in error messages. |
+
+- The sound follows the effect's anchor while it plays, so a charge-up stays on a moving player.
+- `volume` and `pitch` are rolled from the effect's seed when the sound starts, so every player hears the same pitch. Expressions use the inputs at that moment.
+- A looping effect plays one-shot sounds again on every loop. A looping sound that covers the whole timeline keeps playing across loops without restarting.
+- Someone who arrives after a one-shot has played doesn't hear it. Looping sounds still start for them.
+- Sounds aren't thinned by the *Particles* setting or by distance. Players hear them up to the sound's own range.
+- At most 4 copies of the same sound start per tick, so a burst of particles that all play a sound on death doesn't stack into a wall of noise.
+- An unknown sound id logs one warning and is skipped. It can't be checked at load time, because resource packs' sounds load separately.
+
+To play a sound when a particle dies or lands, make a small effect with just the sound and play it with [`on_death` or `on_land`](#on-death-and-on-landing).
+
+See `eden_particles:examples/charge` (a looping hum whose pitch rises with `power`), `firework_burst` (a blast, then a twinkle) and `rain` (a drip on each splash).
+
+## Lights
+
+An entry in `emitters` with `"light"` lights up the blocks around the effect, like a torch that moves with it:
+
+```json
+{ "light": [[0, 15], [1, 0]], "start": 40, "duration": 12 }
+{ "light": "4 + power * 10", "offset": [0, 1, 0] }
+```
+
+| Field | Default | |
+|---|---|---|
+| `light` | required | A [curve](#curves) of block light, 0 to 15, over the entry's window. |
+| `start` | `0` | Tick it turns on. |
+| `duration` | rest of the timeline | Ticks it stays on. |
+| `offset` | `[0, 0, 0]` | Moves the light in the effect's frame. |
+| `name` | none | Used in error messages. |
+
+- Lights need [LambDynamicLights](https://modrinth.com/mod/lambdynamiclights) (Fabric or NeoForge) on the client. Without it, lights are skipped and the rest of the effect plays as normal. Forge has no supported dynamic-lights mod, so lights never show there.
+- The light follows the effect's anchor and fades with distance like block light: level 15 reaches about 15 blocks.
+- Lights are per effect, not per particle. Relighting blocks is expensive, so at most 32 effect lights are lit at once; past that, new ones are skipped.
+- A light that covers a looping effect's whole timeline stays on across loops. A late joiner sees lights still in their window.
+
+See `eden_particles:examples/charge` (a glow that grows with `power`) and `charge_release` (a flash when it fires).
 
 ## Emitter
 
@@ -463,6 +520,8 @@ Values rolled once per particle (speeds, lifetimes, burst counts):
 
 - The vanilla *Particles* setting scales spawns: *All* keeps everything, *Decreased* keeps 2/3, *Minimal* keeps none (except `important` emitters, which keep 1/15). Lower settings show a subset of the same particles, so the effect thins out rather than changing shape.
 - Every client that sees a server-started effect gets the same random pattern.
+- Sounds play in full whatever the *Particles* setting. See [Sounds](#sounds).
+- At most 32 effect lights are lit at once. See [Lights](#lights).
 - Total spawning is capped per tick. Past the cap, every effect thins out proportionally.
 - Attractors and vortices are cheap. Turbulence costs several times the rest of a particle's tick, and `octaves: 2` doubles that.
 - Vanilla holds at most 16,384 live particles per drawing style, and past that it deletes the oldest. Eden keeps below that limit by spawning fewer new particles as space runs out, so particles already on screen never vanish early.

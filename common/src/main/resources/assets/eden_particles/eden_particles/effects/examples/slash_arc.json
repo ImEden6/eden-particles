@@ -30,6 +30,7 @@
       "spawn": { "bursts": [{ "count": 1 }] },
       "velocity": { "type": "fixed", "direction": [0, 0.1, -1], "speed": 0.4 },
       "important": true
-    }
+    },
+    { "sound": "minecraft:entity.player.attack.sweep", "pitch": [0.9, 1.1] }
   ]
 }

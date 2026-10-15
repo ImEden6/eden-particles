@@ -17,7 +17,7 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * A choreographed effect: emitters and sub-effects on a timeline of {@code duration} ticks. {@code range} is the send
+ * A choreographed effect: emitters, sub-effects, sounds and lights on a timeline of {@code duration} ticks. {@code range} is the send
  * distance in blocks; {@code inputs} are the named numbers code can pass in, with their defaults. {@code tracks} keeps
  * the JSON order, so its indices match {@code emitters[i]} in error messages.
  */
@@ -57,10 +57,17 @@ public record ParticleEffect(int duration, boolean loop, float range, Map<String
     private static final Codec<Track> TRACK = new Codec<>() {
         @Override
         public <T> DataResult<Pair<Track, T>> decode(DynamicOps<T> ops, T input) {
-            boolean sub = ops.getMap(input).result().map(m -> m.get("effect") != null).orElse(false);
-            return sub
-                    ? SubEffect.CODEC.decode(ops, input).map(p -> p.mapFirst(Track.class::cast))
-                    : EmitterTrack.CODEC.decode(ops, input).map(p -> p.mapFirst(Track.class::cast));
+            var map = ops.getMap(input).result();
+            if (map.map(m -> m.get("effect") != null).orElse(false)) {
+                return SubEffect.CODEC.decode(ops, input).map(p -> p.mapFirst(Track.class::cast));
+            }
+            if (map.map(m -> m.get("sound") != null).orElse(false)) {
+                return SoundCue.CODEC.decode(ops, input).map(p -> p.mapFirst(Track.class::cast));
+            }
+            if (map.map(m -> m.get("light") != null).orElse(false)) {
+                return LightCue.CODEC.decode(ops, input).map(p -> p.mapFirst(Track.class::cast));
+            }
+            return EmitterTrack.CODEC.decode(ops, input).map(p -> p.mapFirst(Track.class::cast));
         }
 
         @Override
@@ -68,6 +75,8 @@ public record ParticleEffect(int duration, boolean loop, float range, Map<String
             return switch (input) {
                 case EmitterTrack e -> EmitterTrack.CODEC.encode(e, ops, prefix);
                 case SubEffect s -> SubEffect.CODEC.encode(s, ops, prefix);
+                case SoundCue s -> SoundCue.CODEC.encode(s, ops, prefix);
+                case LightCue l -> LightCue.CODEC.encode(l, ops, prefix);
             };
         }
     };
@@ -82,6 +91,18 @@ public record ParticleEffect(int duration, boolean loop, float range, Map<String
                     throw f.failAt("emitters", "at [" + i + "]: starts at tick " + sub.start() + ", past the effect's duration of " + duration);
                 }
                 emitters.set(i, sub.withDuration(duration - sub.start()));
+            }
+            if (emitters.get(i) instanceof SoundCue cue && cue.duration() == SoundCue.REST) {
+                if (cue.start() >= duration) {
+                    throw f.failAt("emitters", "at [" + i + "]: starts at tick " + cue.start() + ", past the effect's duration of " + duration);
+                }
+                emitters.set(i, cue.withDuration(duration - cue.start()));
+            }
+            if (emitters.get(i) instanceof LightCue light && light.duration() == LightCue.REST) {
+                if (light.start() >= duration) {
+                    throw f.failAt("emitters", "at [" + i + "]: starts at tick " + light.start() + ", past the effect's duration of " + duration);
+                }
+                emitters.set(i, light.withDuration(duration - light.start()));
             }
             Track track = emitters.get(i);
             if (track.end() > duration) {
@@ -111,5 +132,13 @@ public record ParticleEffect(int duration, boolean loop, float range, Map<String
 
     public List<SubEffect> subEffects() {
         return tracks.stream().filter(SubEffect.class::isInstance).map(SubEffect.class::cast).toList();
+    }
+
+    public List<SoundCue> sounds() {
+        return tracks.stream().filter(SoundCue.class::isInstance).map(SoundCue.class::cast).toList();
+    }
+
+    public List<LightCue> lights() {
+        return tracks.stream().filter(LightCue.class::isInstance).map(LightCue.class::cast).toList();
     }
 }

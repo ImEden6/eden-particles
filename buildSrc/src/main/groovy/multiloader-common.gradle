@@ -38,6 +38,18 @@ repositories {
         )
         filter { includeGroup('org.parchmentmc.data') }
     }
+    exclusiveContent {
+        forRepository {
+            maven {
+                name = 'Gegy'
+                url = 'https://maven.gegy.dev/releases'
+            }
+        }
+        filter {
+            includeGroupAndSubgroups('dev.lambdaurora')
+            includeGroup('io.github.queerbric')
+        }
+    }
     maven {
         name = 'BlameJared'
         url = 'https://maven.blamejared.com'

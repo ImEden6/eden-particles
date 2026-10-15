@@ -1,6 +1,7 @@
 package com.eden.particles.impl.runtime;
 
 import com.eden.particles.impl.definition.EmitterShape;
+import com.eden.particles.impl.definition.SoundCue;
 import com.eden.particles.impl.definition.EmitterTrack;
 import com.eden.particles.impl.definition.SpawnSpec;
 import com.eden.particles.impl.definition.SubEffect;
@@ -32,6 +33,7 @@ public final class EffectInstance {
     private static final long BURST_SALT = 0x5851F42D4C957F2DL;
     private static final long JITTER_SALT = 0x14057B7EF767814FL;
     private static final long SUB_EFFECT_SALT = 0x94D049BB133111EBL;
+    private static final long SOUND_SALT = 0xD6E8FEB86659FD93L;
     private static final float TWO_PI = (float) (2.0 * Math.PI);
 
     private final BakedEffect effect;
@@ -40,6 +42,11 @@ public final class EffectInstance {
     private final EffectInstance[] children;
     private final int[] startedLoop;
     private EffectHost host;
+    private SoundSink soundSink;
+    private final SoundSink.Sound[] sounds;
+    private final int[] soundLoop;
+    private LightSink lightSink;
+    private final LightSink.Light[] lights;
     private final long[] emitterSeeds;
     private final EmitterState[] states;
     private final float[] inputs;
@@ -62,6 +69,7 @@ public final class EffectInstance {
     private final Vector3f offset = new Vector3f();
     private final Vector3f lineFrom = new Vector3f();
     private final Vector3f lineTo = new Vector3f();
+    private final Vector3f cueOffset = new Vector3f();
     private final Quaternionf frame = new Quaternionf();
 
     public EffectInstance(BakedEffect effect, Anchor anchor, PlayParams params) {
@@ -76,6 +84,10 @@ public final class EffectInstance {
         this.children = new EffectInstance[effect.subEffects().size()];
         this.startedLoop = new int[children.length];
         Arrays.fill(startedLoop, -1);
+        this.sounds = new SoundSink.Sound[effect.sounds().size()];
+        this.soundLoop = new int[sounds.length];
+        Arrays.fill(soundLoop, -1);
+        this.lights = new LightSink.Light[effect.lights().size()];
         int count = effect.emitters().size();
         this.emitterSeeds = new long[count];
         this.states = new EmitterState[count];
@@ -117,10 +129,78 @@ public final class EffectInstance {
         return finished;
     }
 
-    /** Ends spawning, and the sub-effects this effect started. */
+    /** Ends spawning, the sub-effects this effect started, its looping sounds and its lights. */
     public void stop() {
         finished = true;
         stopChildren();
+        for (int s = 0; s < sounds.length; s++) {
+            if (sounds[s] != null) sounds[s].fadeOut();
+            sounds[s] = null;
+        }
+        for (int l = 0; l < lights.length; l++) {
+            if (lights[l] != null) lights[l].end();
+            lights[l] = null;
+        }
+    }
+
+    /** Where lights go; without one they're skipped. */
+    public void setLights(LightSink sink) {
+        this.lightSink = sink;
+    }
+
+    /** Places lights in their window, following the anchor, and removes them after it. */
+    private void tickLights() {
+        List<BakedLight> baked = effect.lights();
+        for (int l = 0; l < lights.length; l++) {
+            BakedLight light = baked.get(l);
+            int start = light.definition().start(), duration = light.definition().duration();
+            if (age < start || age >= start + duration) {
+                if (lights[l] != null) lights[l].end();
+                lights[l] = null;
+                continue;
+            }
+            float t = (age - start + 0.5f) / duration;
+            float level = Math.max(0f, Math.min(15f, light.level().curve().sample(t) * light.level().scale(inputs)));
+            base.transform(light.definition().offset().eval(inputs, cueOffset)).mul(scale);
+            double x = current.x + cueOffset.x, y = current.y + cueOffset.y, z = current.z + cueOffset.z;
+            if (lights[l] != null) lights[l].update(x, y, z, level);
+            else if (lightSink != null) lights[l] = lightSink.start(x, y, z, level);
+        }
+    }
+
+    /** Where sounds play; without one they're skipped. */
+    public void setSounds(SoundSink sink) {
+        this.soundSink = sink;
+    }
+
+    /**
+     * Starts sounds whose time has come and moves playing ones with the anchor. Looping sounds fade out when their
+     * window ends; one-shots play out, and a joiner who missed the start doesn't hear them.
+     */
+    private void tickSounds() {
+        List<SoundCue> cues = effect.sounds();
+        for (int s = 0; s < sounds.length; s++) {
+            SoundCue cue = cues.get(s);
+            boolean inWindow = age >= cue.start() && age < cue.end();
+            SoundSink.Sound sound = sounds[s];
+            if (sound != null && (sound.isDone() || (cue.loop() && !inWindow))) {
+                sound.fadeOut();
+                sounds[s] = sound = null;
+            }
+            base.transform(cue.offset().eval(inputs, cueOffset)).mul(scale);
+            double x = current.x + cueOffset.x, y = current.y + cueOffset.y, z = current.z + cueOffset.z;
+            boolean due = cue.loop() ? inWindow : age == cue.start();
+            if (sound == null && due && soundSink != null && soundLoop[s] != loops) {
+                soundLoop[s] = loops;
+                long soundSeed = Rng.derive(seed ^ SOUND_SALT, (long) loops * sounds.length + s);
+                random.reset(soundSeed);
+                float volume = Math.max(0f, cue.volume().sample(random, inputs));
+                float pitch = cue.pitch().sample(random, inputs);
+                sounds[s] = soundSink.play(cue, volume, pitch, soundSeed, x, y, z);
+            } else if (sound != null) {
+                sound.moveTo(x, y, z);
+            }
+        }
     }
 
     /** Where sub-effects start; without one they're skipped. */
@@ -221,6 +301,8 @@ public final class EffectInstance {
     public int tick(SpawnSink sink, float keep, float keepImportant) {
         int attempts = 0;
         if (children.length > 0) tickSubEffects();
+        if (sounds.length > 0) tickSounds();
+        if (lights.length > 0) tickLights();
         for (BakedEmitter emitter : effect.emitters()) {
             EmitterTrack track = emitter.track();
             if (age < track.start() || age >= track.end()) continue;
@@ -269,7 +351,7 @@ public final class EffectInstance {
                 loops++;
                 for (EmitterState state : states) state.accumulator.reset();
             } else {
-                finished = true;
+                stop();
             }
         }
         return attempts;

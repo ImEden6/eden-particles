@@ -5,6 +5,8 @@ import com.eden.particles.impl.definition.EmitterTrack;
 import com.eden.particles.impl.definition.ParticleEffect;
 import com.eden.particles.impl.definition.ParticleTemplate;
 import com.eden.particles.impl.definition.RenderMode;
+import com.eden.particles.impl.definition.LightCue;
+import com.eden.particles.impl.definition.SoundCue;
 import com.eden.particles.impl.definition.SubEffect;
 import com.eden.particles.impl.definition.Track;
 import com.eden.particles.impl.definition.TemplateRef;
@@ -100,6 +102,10 @@ public final class Linker {
         for (int i = 0; i < tracks.size(); i++) {
             switch (tracks.get(i)) {
                 case SubEffect sub -> refs.add(new Reference("at emitters[" + i + "].effect: ", sub.effect(), sub.inputs().keySet()));
+                case SoundCue cue -> {
+                }
+                case LightCue light -> {
+                }
                 case EmitterTrack track -> {
                     ParticleTemplate template = effect.templates().get(emitter++);
                     String at = "at emitters[" + i + "].template.";

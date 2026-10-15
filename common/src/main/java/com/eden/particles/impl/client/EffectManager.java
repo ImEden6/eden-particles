@@ -1,6 +1,7 @@
 package com.eden.particles.impl.client;
 
 import com.eden.particles.Constants;
+import com.eden.particles.impl.client.light.DynamicLights;
 import com.eden.particles.impl.definition.Trigger;
 import com.eden.particles.impl.load.DefinitionStore;
 import com.eden.particles.impl.math.Rotations;
@@ -21,7 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-/** Ticks playing effects on the client and applies the quality setting, distance fade and spawn budget. */
+/** Ticks playing effects on the client and applies the quality setting, distance fade and spawn budget. Sounds aren't thinned. */
 public final class EffectManager {
 
     static final int MAX_ACTIVE = 512;
@@ -34,6 +35,7 @@ public final class EffectManager {
     private final List<EffectInstance> active = new ArrayList<>();
     private final ClientImages images = new ClientImages(this::onImagesChanged);
     private final ClientSpawnSink sink = new ClientSpawnSink(images);
+    private final ClientSoundSink sounds = new ClientSoundSink();
     private Map<ResourceLocation, BakedEffect> baked = Map.of();
     private ClientLevel level;
     private int attemptsLastTick;
@@ -57,6 +59,8 @@ public final class EffectManager {
         }
         EffectInstance instance = new EffectInstance(effect, anchor, params);
         instance.setHost((child, childAnchor, childParams) -> play(child, childAnchor, childParams).orElse(null));
+        instance.setSounds(sounds);
+        instance.setLights(DynamicLights.INSTANCE);
         active.add(instance);
         return Optional.of(instance);
     }
@@ -99,6 +103,7 @@ public final class EffectManager {
         long start = System.nanoTime();
         triggeredThisTick = 0;
         sink.beginTick();
+        sounds.beginTick();
         attemptsLastTick = active.isEmpty() ? 0 : tickActive(minecraft);
         int dropped = sink.drainDropped();
         if (bench != null && !bench.record(System.nanoTime() - start, attemptsLastTick, dropped)) {
@@ -159,5 +164,6 @@ public final class EffectManager {
         // Playing effects keep their old definitions until they end; stopping them would lose server-started
         // persistent effects, which the server won't send again.
         sink.clearCaches();
+        sounds.clearCaches();
     }
 }

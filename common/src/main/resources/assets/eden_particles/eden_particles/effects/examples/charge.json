@@ -24,6 +24,8 @@
       },
       "spawn": { "rate": 1 },
       "offset": [0, 1, 0]
-    }
+    },
+    { "sound": "minecraft:block.beacon.ambient", "loop": true, "volume": "0.4 + power * 0.6", "pitch": "0.8 + power * 0.6", "offset": [0, 1, 0] },
+    { "light": "4 + power * 10", "offset": [0, 1, 0] }
   ]
 }

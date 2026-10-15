@@ -16,6 +16,7 @@
       "distribution": "even",
       "spawn": { "bursts": [{ "at": 0, "count": 8 }] },
       "velocity": { "type": "radial", "speed": 0.08 }
-    }
+    },
+    { "sound": "minecraft:block.pointed_dripstone.drip_water", "volume": 0.4, "pitch": [0.8, 1.2] }
   ]
 }
