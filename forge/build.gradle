@@ -24,15 +24,15 @@ minecraft {
             // Dev: -Pjoin=localhost connects straight to a server
             if (project.hasProperty('join')) args '--quickPlayMultiplayer', project.property('join').toString()
         }
+        // A run's launch settings come from its name, so the smoke test (scripts/smoke-server.sh) is runServer -Psmoke.
         register('server') {
-            workingDir = file('runs/server')
             args '--nogui'
-        }
-        // scripts/smoke-server.sh
-        register('smokeServer') {
-            workingDir = file('runs/smoke')
-            systemProperty 'eden_particles.smoke', 'true'
-            args '--nogui'
+            if (project.hasProperty('smoke')) {
+                workingDir = file('runs/smoke')
+                systemProperty 'eden_particles.smoke', 'true'
+            } else {
+                workingDir = file('runs/server')
+            }
         }
         register('data') {
             workingDir = file('runs/data')

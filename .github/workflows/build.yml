@@ -112,7 +112,7 @@ jobs:
           CURSEFORGE_TOKEN: ${{ secrets.CURSEFORGE_TOKEN }}
           MODRINTH_TOKEN: ${{ secrets.MODRINTH_TOKEN }}
         run: |
-          prop() { grep "^$1=" gradle.properties | cut -d= -f2- | tr -d '' | xargs; }
+          prop() { grep "^$1=" gradle.properties | cut -d= -f2- | tr -d '\r' | xargs; }
           # A missing token makes publishMods silently do a dry run, which would look like a release.
           if [ -n "$(prop curseforge_project_id)" ] && [ -z "${CURSEFORGE_TOKEN}" ]; then
             echo "::error::Add a CURSEFORGE_TOKEN secret" >&2
