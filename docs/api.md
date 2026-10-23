@@ -2,6 +2,16 @@
 
 Everything you need is in `com.eden.particles.api`. Anything under `impl` can change without notice.
 
+## Stability
+
+From 1.0.0 on, these follow semantic versioning. They only break in a new major version:
+
+- the `com.eden.particles.api` package
+- the effect and template JSON format. Files can say `"format": 1`, and a file with a newer format than the installed mod reads fails with a message saying so.
+- the network protocol (currently 2). Clients and servers on different protocols ignore each other's effects. They don't disconnect.
+
+New optional JSON fields and new API methods can arrive in minor versions. A file that uses a new field won't load on an older 1.x, so put the minimum version you need in your mod's dependency.
+
 ## Playing an effect
 
 ```java
