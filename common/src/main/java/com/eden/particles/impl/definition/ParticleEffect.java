@@ -24,6 +24,20 @@ import java.util.Set;
 public record ParticleEffect(int duration, boolean loop, float range, Map<String, Float> inputs, List<Track> tracks) {
 
     public static final float DEFAULT_RANGE = 64f;
+    public static final int FORMAT = 1;
+
+    /**
+     * Reads the keys every effect and template file may start with. Runs before anything else so a file from a newer
+     * format fails with one clear message instead of on whichever new field it hits first.
+     */
+    static void readHeader(ObjectCodec.Fields f) {
+        int format = f.optional("format", Codecs.intAtLeast(1), FORMAT);
+        if (format > FORMAT) {
+            throw f.fail("written for format " + format + ", but this version of Eden's Particles reads up to format "
+                    + FORMAT + "; update the mod");
+        }
+        f.optional("$schema", Codecs.STRING);
+    }
 
     private static final Codec<Map<String, Float>> INPUTS = new Codec<>() {
         @Override
@@ -82,6 +96,7 @@ public record ParticleEffect(int duration, boolean loop, float range, Map<String
     };
 
     public static final Codec<ParticleEffect> CODEC = ObjectCodec.of("effect", f -> {
+        readHeader(f);
         int duration = f.required("duration", Codecs.intAtLeast(1));
         List<Track> emitters = new ArrayList<>(f.required("emitters", Codecs.nonEmptyList(TRACK)));
         Set<String> names = new HashSet<>();

@@ -43,6 +43,7 @@ public record ParticleTemplate(
     }
 
     public static final Codec<ParticleTemplate> CODEC = ObjectCodec.of("template", f -> {
+        ParticleEffect.readHeader(f);
         RenderMode render = f.required("render", RenderMode.CODEC);
         ParticleTemplate template = new ParticleTemplate(
                 render,

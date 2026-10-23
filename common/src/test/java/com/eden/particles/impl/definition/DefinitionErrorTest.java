@@ -24,6 +24,19 @@ class DefinitionErrorTest {
     }
 
     @Test
+    void newerFormatFailsBeforeAnythingElse() {
+        String error = Json.error(ParticleEffect.CODEC, "{\"format\": 2, \"timeline\": []}");
+        assertEquals("written for format 2, but this version of Eden's Particles reads up to format 1; update the mod", error);
+    }
+
+    @Test
+    void formatAndSchemaKeysAreAccepted() {
+        String error = Json.error(ParticleEffect.CODEC,
+                "{\"$schema\": \"./effect.schema.json\", \"format\": 1, \"duration\": 40.5, \"emitters\": []}");
+        assertEquals("at duration: expected a whole number, got 40.5", error);
+    }
+
+    @Test
     void unknownOptionalFieldIsRejected() {
         String error = Json.error(ParticleEffect.CODEC,
                 effect("{\"duration\": 10, " + TEMPLATE + ", \"spawn\": {\"rate\": 1}, \"ofset\": [0, 1, 0]}"));
