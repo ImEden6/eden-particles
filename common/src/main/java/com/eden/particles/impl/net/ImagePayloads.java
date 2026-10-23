@@ -40,7 +40,7 @@ public final class ImagePayloads {
     /** Server → client. {@code revision} identifies this set of images, so a stale answer is ignored. */
     public record Offer(int revision, List<Entry> entries, long totalBytes) implements CustomPacketPayload {
 
-        public static final Type<Offer> TYPE = new Type<>(Constants.id("image_offer"));
+        public static final Type<Offer> TYPE = new Type<>(Constants.payload("image_offer"));
 
         public static final StreamCodec<RegistryFriendlyByteBuf, Offer> STREAM_CODEC = StreamCodec.of(
                 (buf, p) -> {
@@ -76,7 +76,7 @@ public final class ImagePayloads {
     /** Client → server. {@code need} lists the offer's indices the client doesn't have; empty when declining. */
     public record Consent(int revision, boolean accepted, List<Integer> need) implements CustomPacketPayload {
 
-        public static final Type<Consent> TYPE = new Type<>(Constants.id("image_consent"));
+        public static final Type<Consent> TYPE = new Type<>(Constants.payload("image_consent"));
 
         public static final StreamCodec<RegistryFriendlyByteBuf, Consent> STREAM_CODEC = StreamCodec.of(
                 (buf, p) -> {
@@ -124,7 +124,7 @@ public final class ImagePayloads {
      */
     public record Images(int revision, boolean first, boolean last, List<Image> images) implements CustomPacketPayload {
 
-        public static final Type<Images> TYPE = new Type<>(Constants.id("images"));
+        public static final Type<Images> TYPE = new Type<>(Constants.payload("images"));
 
         public static final StreamCodec<RegistryFriendlyByteBuf, Images> STREAM_CODEC = StreamCodec.of(
                 (buf, p) -> {

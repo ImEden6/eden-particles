@@ -18,7 +18,7 @@ import net.minecraftforge.network.PacketDistributor;
 public class ForgeNetworking implements INetworking {
 
     private static final Channel<CustomPacketPayload> CHANNEL = ChannelBuilder.named(Constants.id("main"))
-            .networkProtocolVersion(1)
+            .networkProtocolVersion(Constants.PROTOCOL)
             .optional()
             .payloadChannel()
             .play()

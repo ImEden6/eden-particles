@@ -23,7 +23,7 @@ public record PlayEffectPayload(
         long seed,
         int elapsed) implements CustomPacketPayload {
 
-    public static final Type<PlayEffectPayload> TYPE = new Type<>(Constants.id("play"));
+    public static final Type<PlayEffectPayload> TYPE = new Type<>(Constants.payload("play"));
 
     private static final StreamCodec<RegistryFriendlyByteBuf, Optional<AnchorData>> TARGET =
             ByteBufCodecs.optional(AnchorData.STREAM_CODEC).cast();

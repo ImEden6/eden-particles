@@ -22,7 +22,7 @@ public record SyncDefinitionsPayload(boolean first, boolean last, List<Entry> en
     public record Entry(DefinitionError.Kind kind, ResourceLocation id, String json) {
     }
 
-    public static final Type<SyncDefinitionsPayload> TYPE = new Type<>(Constants.id("sync"));
+    public static final Type<SyncDefinitionsPayload> TYPE = new Type<>(Constants.payload("sync"));
 
     public static final StreamCodec<RegistryFriendlyByteBuf, SyncDefinitionsPayload> STREAM_CODEC = StreamCodec.of(
             (buf, p) -> {

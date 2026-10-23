@@ -29,7 +29,7 @@ public class EdenParticlesNeoForge {
     public EdenParticlesNeoForge(IEventBus modEventBus) {
         EdenParticlesCommon.init();
         modEventBus.addListener(RegisterPayloadHandlersEvent.class, event -> {
-            PayloadRegistrar registrar = event.registrar("1").optional();
+            PayloadRegistrar registrar = event.registrar(String.valueOf(Constants.PROTOCOL)).optional();
             registrar.playToClient(PlayEffectPayload.TYPE, PlayEffectPayload.STREAM_CODEC,
                     (payload, context) -> Sides.client().ifPresent(client -> client.handle(payload)));
             registrar.playToClient(StopEffectPayload.TYPE, StopEffectPayload.STREAM_CODEC,

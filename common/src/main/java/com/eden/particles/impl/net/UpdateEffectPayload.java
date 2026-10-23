@@ -8,7 +8,7 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 /** Server → client: the full changeable state of a playing effect, after its handle's setters were called. */
 public record UpdateEffectPayload(int instanceId, EffectState state) implements CustomPacketPayload {
 
-    public static final Type<UpdateEffectPayload> TYPE = new Type<>(Constants.id("update"));
+    public static final Type<UpdateEffectPayload> TYPE = new Type<>(Constants.payload("update"));
 
     public static final StreamCodec<RegistryFriendlyByteBuf, UpdateEffectPayload> STREAM_CODEC = StreamCodec.of(
             (buf, p) -> {

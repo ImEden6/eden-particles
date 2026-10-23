@@ -11,7 +11,7 @@ public record StopEffectPayload(int instanceId) implements CustomPacketPayload {
 
     public static final int ALL = -1;
 
-    public static final Type<StopEffectPayload> TYPE = new Type<>(Constants.id("stop"));
+    public static final Type<StopEffectPayload> TYPE = new Type<>(Constants.payload("stop"));
 
     public static final StreamCodec<RegistryFriendlyByteBuf, StopEffectPayload> STREAM_CODEC =
             ByteBufCodecs.VAR_INT.map(i -> new StopEffectPayload(i - 1), p -> p.instanceId + 1).cast();
