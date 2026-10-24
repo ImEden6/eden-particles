@@ -26,10 +26,6 @@ public record ParticleEffect(int duration, boolean loop, float range, Map<String
     public static final float DEFAULT_RANGE = 64f;
     public static final int FORMAT = 1;
 
-    /**
-     * Reads the keys every effect and template file may start with. Runs before anything else so a file from a newer
-     * format fails with one clear message instead of on whichever new field it hits first.
-     */
     static void readHeader(ObjectCodec.Fields f) {
         int format = f.optional("format", Codecs.intAtLeast(1), FORMAT);
         if (format > FORMAT) {

@@ -18,7 +18,6 @@ public final class Constants {
         return ResourceLocation.fromNamespaceAndPath(MOD_ID, path);
     }
 
-    /** Payload ids carry the protocol, so a client and server on different protocols just don't see each other's channels. */
     public static ResourceLocation payload(String path) {
         return id("v" + PROTOCOL + "/" + path);
     }

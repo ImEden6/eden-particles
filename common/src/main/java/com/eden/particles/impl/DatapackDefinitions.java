@@ -75,7 +75,6 @@ public class DatapackDefinitions extends SimplePreparableReloadListener<Datapack
         return SYNC.entries();
     }
 
-    /** Ticks a datapack effect plays, if it's one that ends. */
     static OptionalInt duration(ResourceLocation effect) {
         Integer ticks = durations.get(effect);
         return ticks == null ? OptionalInt.empty() : OptionalInt.of(ticks);
