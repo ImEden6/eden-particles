@@ -28,7 +28,6 @@ import com.eden.particles.impl.runtime.EffectInstance;
 import com.eden.particles.impl.runtime.PlayParams;
 import net.minecraft.client.Minecraft;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 
 import java.util.ArrayList;
@@ -103,10 +102,7 @@ final class ClientHooksImpl implements ClientHooks {
     @Override
     public void handle(PlayEffectPayload p) {
         fromServer.values().removeIf(EffectInstance::isFinished);
-        Level level = Minecraft.getInstance().level;
-        EffectAnchor from = p.anchor().toAnchor(level);
-        EffectAnchor anchor = p.target().map(to -> EffectAnchor.between(from, to.toAnchor(level))).orElse(from);
-        start(p.effect(), follow(anchor), p.state(), p.seed())
+        start(p.effect(), new ServerAnchor(p.anchor(), p.target()), p.state(), p.seed())
                 .ifPresent(instance -> {
                     instance.fastForward(p.elapsed());
                     EffectInstance previous = fromServer.put(p.instanceId(), instance);

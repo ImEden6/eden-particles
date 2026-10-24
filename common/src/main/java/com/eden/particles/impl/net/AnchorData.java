@@ -33,6 +33,10 @@ public record AnchorData(Vec3 position, int entityId, Vec3 offset, boolean eyes,
                 anchor.offset(), anchor.atEyes(), anchor.turning());
     }
 
+    public boolean waiting(Level level) {
+        return entityId >= 0 && (level == null || level.getEntity(entityId) == null);
+    }
+
     /** Rebuilds the anchor on the client, falling back to the sent position if the entity isn't loaded. */
     public EffectAnchor toAnchor(Level level) {
         Entity entity = entityId >= 0 && level != null ? level.getEntity(entityId) : null;
