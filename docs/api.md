@@ -55,7 +55,7 @@ An effect following an entity stops when the entity is removed. If a client hasn
 EffectParams params = EffectParams.builder()
         .scale(2f)              // distances, speeds, sizes and gravity
         .rotation(yaw, 0, 0)    // degrees; Minecraft convention (yaw 0 = south, +pitch = down)
-        .tint(0xFF8080)         // multiplies every particle's colour (Eden sprites only)
+        .tint(0xFF8080)         // multiplies every particle's colour
         .seed(12345L)           // same seed → same pattern; random if not set
         .range(96f)             // server send distance
         .persistent()           // server: keep sending to players who arrive later (for looping effects)
@@ -142,8 +142,3 @@ The returned list holds the errors for the id that was registered. It is empty w
 | `/eden_particles_client play <effect> [inputs]` | client | Plays locally, in front of you. Tab completes loaded effects. |
 | `/eden_particles_client errors` | client | Lists definition errors from the last reload. |
 | `/eden_particles_client bench <effect> [count]` | client | Measures Eden's tick cost on a grid of effects. |
-
-## Known limitations
-
-- Vanilla-type particles (`"render": {"type": "vanilla"}`) ignore `tint`.
-- If a client hasn't loaded an anchor's entity, that end stays where the entity was when the effect was sent, and doesn't turn.
