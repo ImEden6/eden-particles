@@ -5,6 +5,7 @@ import com.eden.particles.impl.ParamChecks;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.OptionalInt;
 import java.util.OptionalLong;
 
 /**
@@ -24,6 +25,7 @@ public final class EffectParams {
     private final OptionalLong seed;
     private final float range;
     private final boolean persistent;
+    private final OptionalInt duration;
     private final Map<String, Float> inputs;
 
     private EffectParams(Builder builder) {
@@ -35,6 +37,7 @@ public final class EffectParams {
         this.seed = builder.seed;
         this.range = builder.range;
         this.persistent = builder.persistent;
+        this.duration = builder.duration;
         this.inputs = Collections.unmodifiableMap(new LinkedHashMap<>(builder.inputs));
     }
 
@@ -79,6 +82,11 @@ public final class EffectParams {
         return persistent;
     }
 
+    /** @see Builder#duration(int) */
+    public OptionalInt duration() {
+        return duration;
+    }
+
     /** Values for inputs the effect declares; inputs not listed keep the effect's defaults. */
     public Map<String, Float> inputs() {
         return inputs;
@@ -93,6 +101,7 @@ public final class EffectParams {
         private OptionalLong seed = OptionalLong.empty();
         private float range = DEFAULT_RANGE;
         private boolean persistent;
+        private OptionalInt duration = OptionalInt.empty();
         private final Map<String, Float> inputs = new LinkedHashMap<>();
 
         private Builder() {
@@ -135,6 +144,17 @@ public final class EffectParams {
          */
         public Builder persistent() {
             this.persistent = true;
+            return this;
+        }
+
+        /**
+         * Server only: how many ticks the effect plays. Players who come into range before it ends get it too,
+         * caught up to where it is. Datapack effects that don't loop don't need this; the server reads their duration.
+         * Effects that only live in client resource packs need it to reach late arrivals.
+         */
+        public Builder duration(int ticks) {
+            if (ticks < 1) throw new IllegalArgumentException("duration must be at least 1 tick, got " + ticks);
+            this.duration = OptionalInt.of(ticks);
             return this;
         }
 

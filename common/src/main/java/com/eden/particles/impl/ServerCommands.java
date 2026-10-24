@@ -75,7 +75,7 @@ public final class ServerCommands {
                                                 FloatArgumentType.getFloat(c, "value"))))))
                 .then(Commands.literal("stop")
                         .executes(c -> {
-                            ServerEffects.forgetPersistent(c.getSource().getLevel());
+                            ServerEffects.forgetTracked(c.getSource().getLevel());
                             return stop(c, c.getSource().getLevel().players());
                         })
                         .then(Commands.argument("targets", EntityArgument.players())

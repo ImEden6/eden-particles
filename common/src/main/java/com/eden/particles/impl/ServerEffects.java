@@ -20,21 +20,23 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.OptionalInt;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * Sends effects to clients. The server never simulates particles and doesn't know effect definitions. Persistent
- * effects are remembered and re-sent to players who come into range later. Handle changes are sent once per tick.
+ * Sends effects to clients. The server never simulates particles. Persistent effects, and effects whose duration
+ * is known (from the datapack or {@link EffectParams#duration()}), are tracked and sent to players who come into
+ * range while they play. Handle changes are sent once per tick.
  */
 public final class ServerEffects {
 
-    /** How often persistent effects look for newly arrived players. */
+    /** How often tracked effects look for newly arrived players. */
     static final int LATE_JOIN_INTERVAL = 10;
 
     private static final AtomicInteger NEXT_ID = new AtomicInteger();
-    private static final List<Handle> PERSISTENT = new ArrayList<>();
+    private static final List<Handle> TRACKED = new ArrayList<>();
     private static final Set<Handle> CHANGED = new LinkedHashSet<>();
 
     private ServerEffects() {
@@ -47,8 +49,10 @@ public final class ServerEffects {
     public static Result play(ServerLevel level, ResourceLocation effect, EffectAnchor anchor, EffectParams params) {
         Handle handle = new Handle(level, effect, anchor, params);
         handle.sendToNewcomers();
-        if (params.persistent()) {
-            PERSISTENT.add(handle);
+        OptionalInt duration = params.duration().isPresent() ? params.duration() : DatapackDefinitions.duration(effect);
+        if (params.persistent() || duration.isPresent()) {
+            if (!params.persistent()) handle.endTime = handle.startTime + duration.getAsInt();
+            TRACKED.add(handle);
             return new Result(handle, handle.recipients.size());
         }
         return handle.recipients.isEmpty() ? new Result(EffectHandle.NONE, 0) : new Result(handle, handle.recipients.size());
@@ -70,17 +74,17 @@ public final class ServerEffects {
         }
     }
 
-    /** Forgets every persistent effect in this level, so nobody is re-sent them. */
-    public static void forgetPersistent(ServerLevel level) {
-        PERSISTENT.removeIf(handle -> {
+    /** Forgets every tracked effect in this level, so nobody arriving later is sent them. */
+    public static void forgetTracked(ServerLevel level) {
+        TRACKED.removeIf(handle -> {
             if (handle.level != level) return false;
             handle.stopped = true;
             return true;
         });
     }
 
-    static int persistentCount() {
-        return PERSISTENT.size();
+    static int trackedCount() {
+        return TRACKED.size();
     }
 
     static int changedCount() {
@@ -96,8 +100,8 @@ public final class ServerEffects {
             }
             CHANGED.clear();
         }
-        if (PERSISTENT.isEmpty() || server.getTickCount() % LATE_JOIN_INTERVAL != 0) return;
-        for (Iterator<Handle> it = PERSISTENT.iterator(); it.hasNext(); ) {
+        if (TRACKED.isEmpty() || server.getTickCount() % LATE_JOIN_INTERVAL != 0) return;
+        for (Iterator<Handle> it = TRACKED.iterator(); it.hasNext(); ) {
             Handle handle = it.next();
             // Entries from a previous integrated-server session, or ended effects, are dropped.
             if (handle.level.getServer() != server || !handle.isAlive()) {
@@ -116,6 +120,7 @@ public final class ServerEffects {
         private final float range;
         private final long seed;
         private final long startTime;
+        private long endTime = Long.MAX_VALUE;
         private final List<Entity> entities = new ArrayList<>(2);
         private final Set<UUID> recipients = new HashSet<>();
         private EffectState state;
@@ -202,7 +207,7 @@ public final class ServerEffects {
         public void stop() {
             if (stopped) return;
             stopped = true;
-            PERSISTENT.remove(this);
+            TRACKED.remove(this);
             CHANGED.remove(this);
             StopEffectPayload payload = new StopEffectPayload(id);
             for (UUID uuid : recipients) {
@@ -213,7 +218,7 @@ public final class ServerEffects {
 
         @Override
         public boolean isAlive() {
-            if (stopped) return false;
+            if (stopped || level.getGameTime() >= endTime) return false;
             // Players aren't removed when they change dimension, so check the level too.
             for (Entity entity : entities) {
                 if (entity.isRemoved() || entity.level() != level) return false;

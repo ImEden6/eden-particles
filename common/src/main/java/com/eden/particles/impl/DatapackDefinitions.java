@@ -18,7 +18,10 @@ import net.minecraft.server.packs.resources.SimplePreparableReloadListener;
 import net.minecraft.util.profiling.ProfilerFiller;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.OptionalInt;
 import java.util.Set;
 import java.util.WeakHashMap;
 
@@ -32,6 +35,7 @@ public class DatapackDefinitions extends SimplePreparableReloadListener<Datapack
 
     /** Player objects are new on every login, so weak keys clear themselves. */
     private static final DefinitionSync<ServerPlayer> SYNC = new DefinitionSync<>(new WeakHashMap<>());
+    private static Map<ResourceLocation, Integer> durations = Map.of();
 
     record Prepared(DefinitionFiles.Read read, ParsedDefinitions parsed, List<ImagePayloads.Image> images, List<DefinitionError> imageErrors) {
     }
@@ -52,6 +56,11 @@ public class DatapackDefinitions extends SimplePreparableReloadListener<Datapack
         collect(prepared.read().effects(), parsed.effects().keySet(), DefinitionError.Kind.EFFECT, entries);
         SYNC.replace(entries);
         ServerImages.replace(prepared.images());
+        Map<ResourceLocation, Integer> lengths = new HashMap<>();
+        parsed.effects().forEach((id, effect) -> {
+            if (!effect.loop()) lengths.put(id, effect.duration());
+        });
+        durations = Map.copyOf(lengths);
 
         List<DefinitionError> errors = new ArrayList<>(parsed.errors());
         errors.addAll(prepared.imageErrors());
@@ -64,6 +73,12 @@ public class DatapackDefinitions extends SimplePreparableReloadListener<Datapack
 
     static List<SyncDefinitionsPayload.Entry> entries() {
         return SYNC.entries();
+    }
+
+    /** Ticks a datapack effect plays, if it's one that ends. */
+    static OptionalInt duration(ResourceLocation effect) {
+        Integer ticks = durations.get(effect);
+        return ticks == null ? OptionalInt.empty() : OptionalInt.of(ticks);
     }
 
     static List<ResourceLocation> effectIds() {

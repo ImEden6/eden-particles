@@ -70,9 +70,15 @@ final class SmokeTest {
         CommandDispatcher<CommandSourceStack> commands = server.getCommands().getDispatcher();
         CommandSourceStack source = server.createCommandSourceStack().withSuppressedOutput();
         check(failures, commands.execute("eden_particles play eden_smoke:burst 0 64 0 persistent", source) == 1, "play persistent failed");
-        check(failures, ServerEffects.persistentCount() == 1, "persistent effect not tracked");
+        check(failures, ServerEffects.trackedCount() == 1, "persistent effect not tracked");
         commands.execute("eden_particles stop", source);
-        check(failures, ServerEffects.persistentCount() == 0, "stop didn't forget the persistent effect");
+        check(failures, ServerEffects.trackedCount() == 0, "stop didn't forget the persistent effect");
+        ServerLevel overworld = server.overworld();
+        EffectHandle timed = EdenParticles.play(overworld, ResourceLocation.parse("eden_smoke:burst"), EffectAnchor.at(0, 64, 0),
+                EffectParams.builder().duration(1).build());
+        check(failures, ServerEffects.trackedCount() == 1, "effect with a duration not tracked for late arrivals");
+        check(failures, timed.isAlive(), "effect with a duration not alive");
+        timed.stop();
 
         ServerLevel level = server.overworld();
         ArmorStand caster = stand(level, 0, 64, 0);
