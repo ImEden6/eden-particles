@@ -107,6 +107,7 @@ final class ClientSpawnSink implements SpawnSink {
                 accessor.eden_particles$setGravity(values.gravity * scale);
                 accessor.eden_particles$setFriction(values.drag);
                 accessor.eden_particles$setHasPhysics(template.physics().collide());
+                if (tint != 0xFFFFFF && particle instanceof TintedParticle tinted) tinted.eden_particles$setTint(tint);
                 minecraft.particleEngine.add(particle);
             }
         }

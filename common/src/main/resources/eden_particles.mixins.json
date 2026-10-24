@@ -6,7 +6,8 @@
   "mixins": [],
   "client": [
     "ParticleAccessor",
-    "ParticleEngineAccessor"
+    "ParticleEngineAccessor",
+    "SingleQuadParticleMixin"
   ],
   "server": [],
   "injectors": {
