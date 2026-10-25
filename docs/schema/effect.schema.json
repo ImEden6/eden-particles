@@ -1,0 +1,483 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Eden's Particles effect",
+  "$ref": "#/$defs/effect",
+  "$defs": {
+    "effect": {
+      "type": "object",
+      "required": ["duration", "emitters"],
+      "additionalProperties": false,
+      "properties": {
+        "$schema": { "type": "string" },
+        "format": { "const": 1, "description": "Format this file is written for." },
+        "duration": { "$ref": "#/$defs/ticks", "description": "Length of the timeline in ticks." },
+        "loop": { "type": "boolean", "description": "Restart the timeline when it ends." },
+        "range": { "type": "number", "minimum": 1, "description": "Particles thin out from 3/8 of this distance and are gone by 3/4 of it." },
+        "inputs": {
+          "type": "object",
+          "description": "Numbers code can set, with their defaults.",
+          "propertyNames": { "pattern": "^[A-Za-z_][A-Za-z0-9_]*$", "not": { "const": "distance" } },
+          "additionalProperties": { "type": "number" }
+        },
+        "emitters": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/track" }
+        }
+      }
+    },
+
+    "template": {
+      "type": "object",
+      "required": ["render", "lifetime"],
+      "additionalProperties": false,
+      "properties": {
+        "$schema": { "type": "string" },
+        "format": { "const": 1 },
+        "render": { "$ref": "#/$defs/render" },
+        "lifetime": { "$ref": "#/$defs/randomInt", "description": "Ticks each particle lives." },
+        "size": { "$ref": "#/$defs/curve", "description": "Size in blocks over the particle's life." },
+        "alpha": { "$ref": "#/$defs/curve", "description": "Opacity over the particle's life." },
+        "color": { "$ref": "#/$defs/gradient" },
+        "speed": { "$ref": "#/$defs/curve", "description": "Multiplies how far the particle moves each tick." },
+        "physics": { "$ref": "#/$defs/physics" },
+        "on_death": { "$ref": "#/$defs/trigger" },
+        "on_land": { "$ref": "#/$defs/trigger" },
+        "trail": { "$ref": "#/$defs/trail" }
+      }
+    },
+
+    "track": {
+      "oneOf": [
+        { "$ref": "#/$defs/emitter" },
+        { "$ref": "#/$defs/subEffect" },
+        { "$ref": "#/$defs/sound" },
+        { "$ref": "#/$defs/light" }
+      ]
+    },
+
+    "emitter": {
+      "type": "object",
+      "required": ["template", "duration", "spawn"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string" },
+        "template": {
+          "description": "A template id, or a template written inline.",
+          "oneOf": [{ "$ref": "#/$defs/id" }, { "$ref": "#/$defs/template" }]
+        },
+        "start": { "$ref": "#/$defs/tick" },
+        "duration": { "$ref": "#/$defs/ticks" },
+        "spawn": { "$ref": "#/$defs/spawn" },
+        "shape": { "$ref": "#/$defs/shape" },
+        "velocity": { "$ref": "#/$defs/velocity" },
+        "offset": { "$ref": "#/$defs/vec3" },
+        "axis": {
+          "oneOf": [
+            { "enum": ["x", "y", "z", "-x", "-y", "-z"] },
+            { "$ref": "#/$defs/vec3" }
+          ]
+        },
+        "spin": { "$ref": "#/$defs/curve", "description": "Degrees per tick around the axis." },
+        "distribution": { "enum": ["random", "even"] },
+        "important": { "type": "boolean" }
+      }
+    },
+
+    "subEffect": {
+      "type": "object",
+      "required": ["effect"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string" },
+        "effect": { "$ref": "#/$defs/id" },
+        "start": { "$ref": "#/$defs/tick" },
+        "duration": { "$ref": "#/$defs/ticks" },
+        "offset": { "$ref": "#/$defs/vec3" },
+        "rotation": { "$ref": "#/$defs/vec3", "description": "Yaw, pitch and roll in degrees." },
+        "scale": { "$ref": "#/$defs/number" },
+        "inputs": { "$ref": "#/$defs/inputValues" }
+      }
+    },
+
+    "sound": {
+      "type": "object",
+      "required": ["sound"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string" },
+        "sound": { "$ref": "#/$defs/id" },
+        "start": { "$ref": "#/$defs/tick" },
+        "loop": { "type": "boolean" },
+        "duration": { "$ref": "#/$defs/ticks" },
+        "volume": { "$ref": "#/$defs/random" },
+        "pitch": { "$ref": "#/$defs/random" },
+        "offset": { "$ref": "#/$defs/vec3" },
+        "category": { "enum": ["master", "music", "record", "weather", "block", "hostile", "neutral", "player", "ambient", "voice"] }
+      }
+    },
+
+    "light": {
+      "type": "object",
+      "required": ["light"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string" },
+        "light": { "$ref": "#/$defs/curve", "description": "Block light, 0 to 15." },
+        "start": { "$ref": "#/$defs/tick" },
+        "duration": { "$ref": "#/$defs/ticks" },
+        "offset": { "$ref": "#/$defs/vec3" }
+      }
+    },
+
+    "spawn": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "rate": { "$ref": "#/$defs/curve", "description": "Particles per tick." },
+        "bursts": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["count"],
+            "additionalProperties": false,
+            "properties": {
+              "at": { "$ref": "#/$defs/tick" },
+              "count": { "$ref": "#/$defs/randomInt" }
+            }
+          }
+        },
+        "jitter": { "type": "boolean" }
+      }
+    },
+
+    "shape": {
+      "type": "object",
+      "required": ["type"],
+      "properties": { "type": { "enum": ["point", "sphere", "hemisphere", "disc", "ring", "box", "line"] } },
+      "oneOf": [
+        { "properties": { "type": { "const": "point" } }, "additionalProperties": false },
+        {
+          "properties": {
+            "type": { "const": "sphere" }, "radius": { "$ref": "#/$defs/curve" },
+            "inner_radius": { "$ref": "#/$defs/number" }, "surface": { "type": "boolean" }
+          },
+          "required": ["radius"], "additionalProperties": false
+        },
+        {
+          "properties": { "type": { "const": "hemisphere" }, "radius": { "$ref": "#/$defs/curve" }, "surface": { "type": "boolean" } },
+          "required": ["radius"], "additionalProperties": false
+        },
+        {
+          "properties": { "type": { "const": "disc" }, "radius": { "$ref": "#/$defs/curve" }, "inner_radius": { "$ref": "#/$defs/number" } },
+          "required": ["radius"], "additionalProperties": false
+        },
+        {
+          "properties": { "type": { "const": "ring" }, "radius": { "$ref": "#/$defs/curve" } },
+          "required": ["radius"], "additionalProperties": false
+        },
+        {
+          "properties": { "type": { "const": "box" }, "size": { "$ref": "#/$defs/vec3" }, "surface": { "type": "boolean" } },
+          "required": ["size"], "additionalProperties": false
+        },
+        {
+          "properties": { "type": { "const": "line" }, "from": { "$ref": "#/$defs/vec3" }, "to": { "$ref": "#/$defs/vec3" } },
+          "required": ["from", "to"], "additionalProperties": false
+        }
+      ]
+    },
+
+    "velocity": {
+      "type": "object",
+      "required": ["type"],
+      "properties": { "type": { "enum": ["none", "fixed", "radial", "toward_center", "tangent", "cone"] } },
+      "oneOf": [
+        { "properties": { "type": { "const": "none" } }, "additionalProperties": false },
+        {
+          "properties": { "type": { "const": "fixed" }, "direction": { "$ref": "#/$defs/vec3" }, "speed": { "$ref": "#/$defs/speed" } },
+          "required": ["direction", "speed"], "additionalProperties": false
+        },
+        {
+          "properties": { "type": { "enum": ["radial", "toward_center", "tangent"] }, "speed": { "$ref": "#/$defs/speed" } },
+          "required": ["speed"], "additionalProperties": false
+        },
+        {
+          "properties": { "type": { "const": "cone" }, "half_angle": { "$ref": "#/$defs/number" }, "speed": { "$ref": "#/$defs/speed" } },
+          "required": ["half_angle", "speed"], "additionalProperties": false
+        }
+      ]
+    },
+
+    "speed": {
+      "oneOf": [
+        { "$ref": "#/$defs/random" },
+        {
+          "type": "object",
+          "required": ["distance"],
+          "additionalProperties": false,
+          "properties": { "distance": { "$ref": "#/$defs/random", "description": "Blocks each particle travels over its life." } }
+        }
+      ]
+    },
+
+    "render": {
+      "type": "object",
+      "required": ["type"],
+      "properties": { "type": { "enum": ["sprite", "ribbon", "vanilla"] } },
+      "oneOf": [
+        {
+          "properties": {
+            "type": { "enum": ["sprite", "ribbon"] },
+            "sprite": { "$ref": "#/$defs/sprite" },
+            "blend": { "$ref": "#/$defs/blend" },
+            "emissive": { "type": "boolean" }
+          },
+          "required": ["sprite"], "additionalProperties": false
+        },
+        {
+          "properties": { "type": { "const": "vanilla" }, "particle": { "$ref": "#/$defs/id" } },
+          "required": ["particle"], "additionalProperties": false
+        }
+      ]
+    },
+
+    "blend": { "enum": ["translucent", "additive"] },
+
+    "sprite": {
+      "oneOf": [
+        { "$ref": "#/$defs/id" },
+        {
+          "type": "object",
+          "required": ["frames"],
+          "additionalProperties": false,
+          "properties": {
+            "frames": { "type": "array", "minItems": 1, "maxItems": 64, "items": { "$ref": "#/$defs/id" } },
+            "mode": { "$ref": "#/$defs/frameMode" },
+            "ticks_per_frame": { "type": "integer", "minimum": 1 }
+          }
+        },
+        {
+          "type": "object",
+          "required": ["sheet", "columns", "rows"],
+          "additionalProperties": false,
+          "properties": {
+            "sheet": { "$ref": "#/$defs/id" },
+            "columns": { "type": "integer", "minimum": 1 },
+            "rows": { "type": "integer", "minimum": 1 },
+            "count": { "type": "integer", "minimum": 1, "maximum": 256 },
+            "mode": { "$ref": "#/$defs/frameMode" },
+            "ticks_per_frame": { "type": "integer", "minimum": 1 }
+          }
+        }
+      ]
+    },
+
+    "frameMode": { "enum": ["over_life", "loop", "random"] },
+
+    "physics": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "gravity": { "$ref": "#/$defs/number" },
+        "drag": { "$ref": "#/$defs/number" },
+        "collide": { "type": "boolean" },
+        "forces": { "type": "array", "maxItems": 8, "items": { "$ref": "#/$defs/force" } }
+      }
+    },
+
+    "force": {
+      "type": "object",
+      "required": ["type", "strength"],
+      "properties": { "type": { "enum": ["turbulence", "attractor", "vortex"] } },
+      "oneOf": [
+        {
+          "properties": {
+            "type": { "const": "turbulence" }, "strength": { "$ref": "#/$defs/curve" },
+            "scale": { "$ref": "#/$defs/number" }, "flow": { "$ref": "#/$defs/number" },
+            "octaves": { "enum": [1, 2] }
+          },
+          "additionalProperties": false
+        },
+        {
+          "properties": {
+            "type": { "const": "attractor" }, "strength": { "$ref": "#/$defs/curve" },
+            "point": { "$ref": "#/$defs/point" }, "falloff": { "$ref": "#/$defs/falloff" },
+            "radius": { "$ref": "#/$defs/number" }, "absorb": { "$ref": "#/$defs/number" }
+          },
+          "additionalProperties": false
+        },
+        {
+          "properties": {
+            "type": { "const": "vortex" }, "strength": { "$ref": "#/$defs/curve" },
+            "point": { "$ref": "#/$defs/point" }, "axis": { "$ref": "#/$defs/vec3" },
+            "pull": { "$ref": "#/$defs/number" }, "lift": { "$ref": "#/$defs/number" },
+            "falloff": { "$ref": "#/$defs/falloff" }, "radius": { "$ref": "#/$defs/number" }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+
+    "point": { "oneOf": [{ "enum": ["origin", "target"] }, { "$ref": "#/$defs/vec3" }] },
+    "falloff": { "enum": ["none", "linear", "inverse_square"] },
+
+    "trigger": {
+      "type": "object",
+      "required": ["effect"],
+      "additionalProperties": false,
+      "properties": {
+        "effect": { "$ref": "#/$defs/id" },
+        "chance": { "$ref": "#/$defs/number" },
+        "aim": { "enum": ["none", "velocity"] },
+        "inputs": { "$ref": "#/$defs/inputValues" }
+      }
+    },
+
+    "trail": {
+      "type": "object",
+      "required": ["lifetime"],
+      "additionalProperties": false,
+      "properties": {
+        "lifetime": { "$ref": "#/$defs/ticks" },
+        "max_points": { "type": "integer", "minimum": 3, "maximum": 64 },
+        "min_distance": { "type": "number", "minimum": 0 },
+        "width": { "$ref": "#/$defs/curve" },
+        "alpha": { "$ref": "#/$defs/curve" },
+        "color": { "$ref": "#/$defs/gradient" },
+        "sprite": { "$ref": "#/$defs/sprite" },
+        "mode": { "enum": ["stretch", "tile"] },
+        "tile_length": { "type": "number", "minimum": 0.01 },
+        "blend": { "$ref": "#/$defs/blend" },
+        "emissive": { "type": "boolean" }
+      }
+    },
+
+    "curve": {
+      "description": "A number, an expression, a list of [t, value] keys, or an object with keys.",
+      "oneOf": [
+        { "$ref": "#/$defs/number" },
+        { "$ref": "#/$defs/keys" },
+        {
+          "type": "object",
+          "required": ["keys"],
+          "additionalProperties": false,
+          "properties": {
+            "keys": { "$ref": "#/$defs/keys" },
+            "ease": { "$ref": "#/$defs/ease" },
+            "mode": { "enum": ["linear", "monotone", "catmull_rom"] },
+            "scale": { "$ref": "#/$defs/number" }
+          }
+        }
+      ]
+    },
+
+    "keys": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "oneOf": [
+          { "type": "array", "prefixItems": [{ "type": "number" }, { "$ref": "#/$defs/number" }], "minItems": 2, "maxItems": 2 },
+          {
+            "type": "object",
+            "required": ["t", "v"],
+            "additionalProperties": false,
+            "properties": { "t": { "type": "number" }, "v": { "$ref": "#/$defs/number" }, "ease": { "$ref": "#/$defs/ease" } }
+          }
+        ]
+      }
+    },
+
+    "ease": {
+      "oneOf": [
+        {
+          "type": "string",
+          "pattern": "^(linear|step|smooth|(in_|out_|in_out_)(sine|quad|cubic|quart|quint|expo|circ|back|elastic|bounce))$"
+        },
+        {
+          "type": "object",
+          "required": ["cubic_bezier"],
+          "additionalProperties": false,
+          "properties": { "cubic_bezier": { "type": "array", "items": { "type": "number" }, "minItems": 4, "maxItems": 4 } }
+        }
+      ]
+    },
+
+    "gradient": {
+      "oneOf": [
+        { "$ref": "#/$defs/color" },
+        { "$ref": "#/$defs/colorKeys" },
+        {
+          "type": "object",
+          "required": ["keys"],
+          "additionalProperties": false,
+          "properties": {
+            "keys": { "$ref": "#/$defs/colorKeys" },
+            "space": { "enum": ["oklab", "srgb", "linear"] },
+            "ease": { "$ref": "#/$defs/ease" }
+          }
+        }
+      ]
+    },
+
+    "colorKeys": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["t", "color"],
+        "additionalProperties": false,
+        "properties": { "t": { "type": "number" }, "color": { "$ref": "#/$defs/color" }, "ease": { "$ref": "#/$defs/ease" } }
+      }
+    },
+
+    "color": { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}$" },
+
+    "random": {
+      "description": "Rolled once per particle: a number, an expression, [min, max], {min, max} or {mean, deviation}.",
+      "oneOf": [
+        { "$ref": "#/$defs/number" },
+        { "type": "array", "items": { "$ref": "#/$defs/number" }, "minItems": 2, "maxItems": 2 },
+        {
+          "type": "object",
+          "required": ["min", "max"],
+          "additionalProperties": false,
+          "properties": { "min": { "$ref": "#/$defs/number" }, "max": { "$ref": "#/$defs/number" } }
+        },
+        {
+          "type": "object",
+          "required": ["mean", "deviation"],
+          "additionalProperties": false,
+          "properties": {
+            "mean": { "type": "number" }, "deviation": { "type": "number", "minimum": 0 },
+            "min": { "type": "number" }, "max": { "type": "number" }
+          }
+        }
+      ]
+    },
+
+    "randomInt": {
+      "oneOf": [
+        { "type": "integer" },
+        { "$ref": "#/$defs/expression" },
+        { "type": "array", "items": { "oneOf": [{ "type": "integer" }, { "$ref": "#/$defs/expression" }] }, "minItems": 2, "maxItems": 2 },
+        {
+          "type": "object",
+          "required": ["min", "max"],
+          "additionalProperties": false,
+          "properties": {
+            "min": { "oneOf": [{ "type": "integer" }, { "$ref": "#/$defs/expression" }] },
+            "max": { "oneOf": [{ "type": "integer" }, { "$ref": "#/$defs/expression" }] }
+          }
+        }
+      ]
+    },
+
+    "inputValues": { "type": "object", "additionalProperties": { "$ref": "#/$defs/number" } },
+    "vec3": { "type": "array", "items": { "$ref": "#/$defs/number" }, "minItems": 3, "maxItems": 3 },
+    "number": { "oneOf": [{ "type": "number" }, { "$ref": "#/$defs/expression" }] },
+    "expression": { "type": "string", "description": "An expression over the effect's inputs, like \"power * 2\"." },
+    "tick": { "type": "integer", "minimum": 0 },
+    "ticks": { "type": "integer", "minimum": 1 },
+    "id": { "type": "string", "pattern": "^([a-z0-9_.-]+:)?[a-z0-9_./-]+$" }
+  }
+}
