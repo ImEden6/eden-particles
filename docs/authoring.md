@@ -22,6 +22,14 @@ Sprites go in the vanilla particle atlas, so any PNG under `textures/particle/` 
 
 All times are in **ticks** (20 per second). Distances are in blocks. Speeds are in blocks per tick.
 
+For autocomplete and typo checks in your editor, point the file at the schema. Copy `docs/schema/` from this repo next to your files:
+
+```json
+{ "$schema": "../schema/effect.schema.json", "format": 1, "duration": 40, "emitters": [ … ] }
+```
+
+Templates use `template.schema.json`, which needs `effect.schema.json` beside it. `format` is optional and only marks which format the file is written for.
+
 Reload with `F3+T`. `/eden_particles_client errors` lists any problems, and `/eden_particles_client play <effect> [inputs]` plays one in front of you (inputs as `power=2 spread=0.5`). The mod ships working examples under `eden_particles:examples/…`.
 
 ## Images in a datapack
