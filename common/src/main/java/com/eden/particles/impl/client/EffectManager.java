@@ -99,7 +99,7 @@ public final class EffectManager {
             level = minecraft.level;
         }
         if (level == null || minecraft.isPaused()) return;
-        Demo.tick(minecraft, this);
+        Preview.tick(minecraft, this);
         long start = System.nanoTime();
         triggeredThisTick = 0;
         sink.beginTick();

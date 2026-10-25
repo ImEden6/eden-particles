@@ -30,7 +30,7 @@ public final class ClientEffects {
 
     public static void init() {
         Sides.installClient(HOOKS);
-        Demo.init();
+        Preview.init();
     }
 
     public static void tick() {
