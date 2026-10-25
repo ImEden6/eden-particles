@@ -141,4 +141,6 @@ The returned list holds the errors for the id that was registered. It is empty w
 | `/eden_particles stop [targets]` | server, op 2 | Stops every server-started effect for those players. Without targets, it also forgets the dimension's tracked effects, so nobody arriving later gets them. |
 | `/eden_particles_client play <effect> [inputs]` | client | Plays locally, in front of you. Tab completes loaded effects. |
 | `/eden_particles_client errors` | client | Lists definition errors from the last reload. |
+| `/eden_particles_client reload` | client | Reloads effect and template files without a full `F3+T`, then prints how many loaded and how many failed. Images aren't reloaded. |
+| `/eden_particles_client preview <effect> [inputs]` | client | Replays the effect in front of you whenever nothing else is playing. `preview stop` ends it. |
 | `/eden_particles_client bench <effect> [count]` | client | Measures Eden's tick cost on a grid of effects. |

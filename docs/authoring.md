@@ -30,7 +30,7 @@ For autocomplete and typo checks in your editor, point the file at the schema. C
 
 Templates use `template.schema.json`, which needs `effect.schema.json` beside it. `format` is optional and only marks which format the file is written for.
 
-Reload with `F3+T`. `/eden_particles_client errors` lists any problems, and `/eden_particles_client play <effect> [inputs]` plays one in front of you (inputs as `power=2 spread=0.5`). The mod ships working examples under `eden_particles:examples/…`.
+Reload with `F3+T`, or just the effect files with `/eden_particles_client reload`. `/eden_particles_client errors` lists any problems, and `/eden_particles_client play <effect> [inputs]` plays one in front of you (inputs as `power=2 spread=0.5`). `/eden_particles_client preview <effect>` keeps replaying it, so you can edit, run `reload`, and watch the change. The mod ships working examples under `eden_particles:examples/…`.
 
 ## Images in a datapack
 
