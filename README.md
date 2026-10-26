@@ -49,7 +49,7 @@ repositories {
 }
 
 dependencies {
-    compileOnly 'com.eden.particles:eden_particles-common-1.21.1:0.2.0'
+    compileOnly 'com.eden.particles:eden_particles-common-1.21.1:1.0.0'
 }
 ```
 
