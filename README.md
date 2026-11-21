@@ -76,17 +76,6 @@ Dev servers need `eula.txt` accepted in their run directory, except NeoForge, wh
 
 Demo mode: add `-Pdemo=<effect id>` to a client run (for example `./gradlew :fabric:runClient -Pdemo=eden_particles:examples/vortex`) to replay that effect in front of you whenever nothing else is playing.
 
-## Releasing
-
-Set `version` in `gradle.properties`, commit, then tag and push it:
-
-```
-git tag v0.1.0
-git push origin v0.1.0
-```
-
-CI builds and tests as usual, and only then publishes all four artifacts. It refuses a tag that doesn't match `version`.
-
 ## Testing
 
 - `./gradlew :common:test`: unit tests (a few seconds), plus a coverage report. `./gradlew build` also fails if line or branch coverage drops below the floor in `common/build.gradle`.
